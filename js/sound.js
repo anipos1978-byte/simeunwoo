@@ -137,6 +137,29 @@ class SoundManager {
             noise.stop(now + time + 0.1);
         });
     }
+
+    // 치킨 획득 소리 (팡파레!)
+    playChicken() {
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        // 도-미-솔-도! (높은음)
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        });
+    }
 }
 
 // 전역 인스턴스 생성

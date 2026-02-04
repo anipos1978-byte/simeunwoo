@@ -166,7 +166,7 @@ class GameEngine {
     // 떨어지는 아이템 업데이트
     for (let i = this.items.length - 1; i >= 0; i--) {
       const item = this.items[i];
-      item.y += this.itemSpeed;
+      item.y += this.itemSpeed * (item.speedMult || 1.0);
 
       // 충돌 검사 (바구니/창 영역)
       // 창의 뾰족한 부분(중앙)에 닿았는지 판정
@@ -214,19 +214,25 @@ class GameEngine {
     if (rand < 0.1) {
       type = "gun";
     }
-    // 10% 확률로 이벤트 박스 (무적)
-    else if (rand < 0.2) {
-      type = "event_box";
+    // 5% 확률로 치킨 (대박 점수)
+    else if (rand < 0.25) {
+      type = "chicken";
     } else {
-      const types = ["apple", "banana", "bomb"];
-      type = types[Math.floor(Math.random() * (this.level >= 2 ? 3 : 2))];
+      const types = ["apple", "banana", "bomb", "grape"];
+      type = types[Math.floor(Math.random() * (this.level >= 2 ? types.length : 2))];
     }
+
+    // 아이템별 속도 배율
+    let speedMult = 1.0;
+    if (type === "grape") speedMult = 1.6; // 포도는 아주 빠름
+    else if (type === "banana") speedMult = 1.2; // 바나나도 약간 빠름
 
     const item = {
       type: type,
       x: laneX,
       y: 0,
-      size: 40
+      size: 40,
+      speedMult: speedMult
     };
     this.items.push(item);
   }
@@ -246,6 +252,23 @@ class GameEngine {
       return;
     }
 
+    if (item.type === "chicken") {
+      this.score += 1000;
+      if (window.soundManager) window.soundManager.playChicken();
+      // 치킨도 스택에 쌓음 (음식이니까)
+      this.skeweredItems.push(item);
+
+      // 5개 체크 (중복 코드지만 일단 진행)
+      if (this.skeweredItems.length >= 5) {
+        this.score += 500;
+        this.skeweredItems = [];
+        if (window.soundManager) window.soundManager.playEat();
+      }
+      this.checkLevelUp();
+      if (this.onScoreChange) this.onScoreChange(this.score, this.level);
+      return;
+    }
+
     if (item.type === "bomb") {
       // 무적 상태거나 슈팅모드면 폭탄 무시? 
       // 슈팅모드는 몸으로 받으면 터져야 함 (총알로만 제거 가능)
@@ -253,7 +276,7 @@ class GameEngine {
         return;
       }
 
-      this.score = Math.max(0, this.score - 300);
+      this.score = Math.max(0, this.score - 250);
       this.skeweredItems = []; // 폭탄 맞으면 다 날아감!
 
       // 폭발 이펙트 & 소리
@@ -270,6 +293,8 @@ class GameEngine {
         this.score += 100;
       } else if (item.type === "banana") {
         this.score += 200;
+      } else if (item.type === "grape") {
+        this.score += 300; // 포도 고득점
       }
 
       // 획득 소리
@@ -428,7 +453,9 @@ class GameEngine {
       for (const item of this.skeweredItems) {
         if (item.type === "apple") ctx.fillStyle = "red";
         else if (item.type === "banana") ctx.fillStyle = "yellow";
-        else if (item.type === "event_box") ctx.fillStyle = "purple";
+        else if (item.type === "grape") ctx.fillStyle = "rebeccapurple";
+        else if (item.type === "event_box") ctx.fillStyle = "violet"; // 색상 변경 (포도와 구별)
+        else if (item.type === "chicken") ctx.fillStyle = "sienna";
 
         ctx.beginPath();
         ctx.arc(item.x + item.size / 2, item.y + item.size / 2, item.size / 2, 0, 2 * Math.PI);
@@ -438,7 +465,9 @@ class GameEngine {
         let emoji = "";
         if (item.type === "apple") emoji = "🍎";
         else if (item.type === "banana") emoji = "🍌";
+        else if (item.type === "grape") emoji = "🍇";
         else if (item.type === "event_box") emoji = "🎁";
+        else if (item.type === "chicken") emoji = "🍗";
         ctx.fillText(emoji, item.x + 5, item.y + 25);
       }
     }
@@ -454,8 +483,10 @@ class GameEngine {
       if (item.type === "bomb") ctx.fillStyle = "black";
       else if (item.type === "apple") ctx.fillStyle = "red";
       else if (item.type === "banana") ctx.fillStyle = "yellow";
-      else if (item.type === "event_box") ctx.fillStyle = "purple";
+      else if (item.type === "grape") ctx.fillStyle = "rebeccapurple";
+      else if (item.type === "event_box") ctx.fillStyle = "violet";
       else if (item.type === "gun") ctx.fillStyle = "gray";
+      else if (item.type === "chicken") ctx.fillStyle = "sienna";
 
       ctx.beginPath();
       ctx.arc(item.x + item.size / 2, item.y + item.size / 2, item.size / 2, 0, 2 * Math.PI);
@@ -466,8 +497,10 @@ class GameEngine {
       if (item.type === "bomb") emoji = "💣";
       else if (item.type === "apple") emoji = "🍎";
       else if (item.type === "banana") emoji = "🍌";
+      else if (item.type === "grape") emoji = "🍇";
       else if (item.type === "event_box") emoji = "🎁";
       else if (item.type === "gun") emoji = "🔫";
+      else if (item.type === "chicken") emoji = "🍗";
 
       ctx.fillText(emoji, item.x, item.y + 15);
     }
