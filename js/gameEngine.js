@@ -31,6 +31,12 @@ class GameEngine {
 
     this.canvasWidth = 400;
     this.canvasHeight = 400;
+
+    // 이미지 로드
+    this.spearImage = new Image();
+    this.spearImage.src = "./assets/spear.png";
+    this.gunImage = new Image();
+    this.gunImage.src = "./assets/gun.png";
   }
 
   start(config = {}) {
@@ -364,6 +370,36 @@ class GameEngine {
     const isGunMode = Date.now() < this.gunEndTime;
 
     if (isGunMode) {
+      if (this.gunImage && this.gunImage.complete) {
+        // 총 그리기
+        const gunWidth = 120; // 가로로 긴 총
+        const gunHeight = 60;
+
+        ctx.save();
+        // 회전 중심: 바구니(캐릭터)의 중심
+        ctx.translate(centerX, this.basket.y);
+        // 반시계방향 90도 회전
+        ctx.rotate(-Math.PI / 2);
+
+        // 이미지 그리기 (회전된 좌표계 기준)
+        // 이미지가 오른쪽을 보고 있다고 가정하면, -90도 회전 시 위를 보게 됨
+        // 중심을 맞춰서 그림
+        // 총구(오른쪽)가 위로 가야 함
+        ctx.drawImage(
+          this.gunImage,
+          -gunWidth / 2,
+          -gunHeight / 2,
+          gunWidth,
+          gunHeight
+        );
+        ctx.restore();
+      } else {
+        // 로딩 전 폴백
+        ctx.fillStyle = "gray";
+        ctx.fillRect(centerX - 20, this.basket.y, 40, 25);
+      }
+
+      /* 기존 총 그리기 코드 주석 처리
       // 기관총 (Machine Gun) 그리기
       // 1. 총열 (Barrel) - 길고 묵직하게
       ctx.fillStyle = "#555";
@@ -387,6 +423,7 @@ class GameEngine {
       ctx.fillStyle = "#8B4513";
       ctx.fillRect(centerX - 30, this.basket.y + 5, 10, 15); // 좌측 핸들
       ctx.fillRect(centerX + 20, this.basket.y + 5, 10, 15); // 우측 핸들
+      */
 
       // 슈팅 모드 텍스트
       ctx.fillStyle = "red";
@@ -395,6 +432,31 @@ class GameEngine {
       ctx.fillText("MACHINE GUN!", centerX, this.basket.y - 60);
 
     } else {
+      // 이미지 그리기 (창)
+      if (this.spearImage && this.spearImage.complete) {
+        // 기존 창의 크기와 위치를 고려하여 그리기
+        // 창 날 끝부분: this.basket.y - 30
+        // 창 자루 끝부분: bottomY + 20 => this.basket.y + 30 + 20 => this.basket.y + 50
+        // 전체 높이: 약 80px ~ 100px
+
+        const spearWidth = 60; // 이미지 비율에 맞춰 조정 필요 (일단 60으로 설정)
+        const spearHeight = 150; // 길게 설정
+
+        // 이미지의 중심을 centerX에 맞춤
+        // 이미지의 위쪽 끝을 창 날 위치에 맞춤
+        ctx.drawImage(
+          this.spearImage,
+          centerX - spearWidth / 2,
+          this.basket.y - 60, // 조금 더 위로
+          spearWidth,
+          spearHeight
+        );
+      } else {
+        // 로딩 실패 시 기존 코드 폴백 또는 로딩 중 처리 (일단 기존 코드 유지하지 않음)
+        ctx.fillStyle = "red";
+        ctx.fillText("Loading...", centerX, this.basket.y);
+      }
+      /* 기존 그리기 코드 주석 처리
       // 창 자루 (갈색)
       ctx.strokeStyle = "#8B4513";
       ctx.lineWidth = 6;
@@ -411,6 +473,7 @@ class GameEngine {
       ctx.lineTo(centerX, this.basket.y - 30); // 위로 뾰족하게
       ctx.closePath();
       ctx.fill();
+      */
     }
 
     // 레인 구분선 그리기

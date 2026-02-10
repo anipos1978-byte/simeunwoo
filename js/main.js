@@ -10,7 +10,7 @@ let stabilizer;
 let ctx;
 let labelContainer;
 let isInitialized = false;
-let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario"
+let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math"
 
 /**
  * 게임 선택
@@ -44,6 +44,17 @@ function selectGame(type) {
     maxPredDiv.style.display = "none";
     labelDiv.style.display = "none";
     document.querySelector("h1").textContent = "마리오 탈출 🍄🏃";
+  } else if (type.startsWith("math")) {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+
+    // 난이도 파싱 (math1, math2, math3)
+    const level = parseInt(type.replace("math", ""));
+    const levelName = level === 1 ? "초등" : level === 2 ? "중등" : "고등";
+    document.querySelector("h1").textContent = `지루한 수학 퀴즈 (Lv.${level} ${levelName}) ✏️💯`;
+
+    // mathGame 시작을 위해 전역 변수 설정 (init에서 사용)
+    currentMathLevel = level;
   } else {
     maxPredDiv.style.display = "block";
     labelDiv.style.display = "block";
@@ -155,6 +166,19 @@ async function init() {
       gameStatus.style.display = "none";
       startMarioMode();
 
+    } else if (currentGameType && currentGameType.startsWith("math")) {
+      // === 지루한 수학 퀴즈 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
+
+      gameEngine = new MathQuizEngine();
+      gameStatus.style.display = "none";
+      startMathMode();
+
     } else {
       // === 과일 받아먹기 게임 ===
       if (!isInitialized) {
@@ -227,7 +251,18 @@ function stop() {
   }
   if (marioRenderLoopId) {
     cancelAnimationFrame(marioRenderLoopId);
+    cancelAnimationFrame(marioRenderLoopId);
     marioRenderLoopId = null;
+  }
+  if (mathRenderLoopId) {
+    cancelAnimationFrame(mathRenderLoopId);
+    mathRenderLoopId = null;
+  }
+
+  // 수학 퀴즈 컨트롤 숨기기
+  const mathControls = document.getElementById("math-controls");
+  if (mathControls) {
+    mathControls.style.display = "none";
   }
 
   startBtn.disabled = false;
@@ -481,4 +516,69 @@ function startMarioMode() {
     marioRenderLoopId = requestAnimationFrame(renderLoop);
   }
   marioRenderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// === 지루한 수학 퀴즈 전용 ===
+let mathRenderLoopId = null;
+let currentMathLevel = 1;
+
+// closeLevelModal, startMathGame 함수 제거됨 (직접 선택으로 변경)
+
+function startMathMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (mathRenderLoopId) {
+      cancelAnimationFrame(mathRenderLoopId);
+      mathRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${finalScore}<br>
+      <span style="font-size: 16px;">당신의 수학 실력은 여기까지...</span><br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start(currentMathLevel);
+
+  function renderLoop(timestamp) {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+
+    gameEngine.update(0); // update DeltaTime은 엔진 내부에서 계산하도록 수정 필요하지만 일단 0 전달 (엔진에서 Date.now 사용)
+    gameEngine.draw(ctx);
+    mathRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  mathRenderLoopId = requestAnimationFrame(renderLoop);
+
+  // 입력창 보이기
+  document.getElementById("math-controls").style.display = "flex";
+  document.getElementById("math-answer").value = "";
+  document.getElementById("math-answer").focus();
+}
+
+// Global functions for math controls
+function submitMathAnswer() {
+  if (gameEngine && gameEngine instanceof MathQuizEngine) {
+    gameEngine.checkAnswer();
+  }
+}
+
+function passMathProblem() {
+  if (gameEngine && gameEngine instanceof MathQuizEngine) {
+    gameEngine.passProblem();
+  }
 }

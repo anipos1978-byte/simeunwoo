@@ -44,9 +44,30 @@
         <div class="card-desc">마리오는 서바이벌! <br>버섯들을 피해 살아남으세요!</div>
         <div class="card-control">⌨️ 방향키 이동</div>
       </div>
+      <div class="game-card" onclick="selectGame('math1')">
+        <div class="card-icon">🐥</div>
+        <div class="card-title">수학 1단계 (초등)</div>
+        <div class="card-desc">사칙연산 기초!<br>구구단을 외자!</div>
+        <div class="card-control">✏️ 쉬움</div>
+      </div>
+      <div class="game-card" onclick="selectGame('math2')">
+        <div class="card-icon">🧑‍🏫</div>
+        <div class="card-title">수학 2단계 (중등)</div>
+        <div class="card-desc">일차방정식과 거듭제곱!<br>음수 계산 주의!</div>
+        <div class="card-control">✏️ 보통</div>
+      </div>
+      <div class="game-card" onclick="selectGame('math3')">
+        <div class="card-icon">🎓</div>
+        <div class="card-title">수학 3단계 (고등)</div>
+        <div class="card-desc">로그, 미분, 수열!<br>진정한 수학왕 도전!</div>
+        <div class="card-control">✏️ 어려움</div>
+      </div>
     </div>
     <div class="author-credit">simeunwoo(심은우) made</div>
   </div>
+
+  <!-- 난이도 선택 모달 -->
+
 
   <!-- 게임 플레이 화면 (초기에는 숨김) -->
   <div class="main-container" id="game-container" style="display: none;">
@@ -63,6 +84,21 @@
     <div class="canvas-wrapper">
       <canvas id="canvas"></canvas>
       <div id="game-status">게임 오버!<br>시작을 눌러주세요</div>
+
+      <!-- 수학 퀴즈 컨트롤 (초기에는 숨김) -->
+      <div id="math-controls" style="display: none; width: 100%; justify-content: center; gap: 10px; margin-top: 10px;">
+        <input type="number" id="math-answer" placeholder="정답 입력" style="padding: 10px; font-size: 16px; width: 100px;">
+        <button id="math-submit" onclick="submitMathAnswer()"
+          style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">제출</button>
+        <button id="math-pass" onclick="passMathProblem()"
+          style="padding: 10px 20px; background-color: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer;">모른다
+          (-2점)</button>
+      </div>
+
+      <!-- 정답 및 해설 표시 (초기에는 숨김) -->
+      <div id="math-explanation"
+        style="display: none; width: 100%; margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold;">
+      </div>
     </div>
   </div>
 
@@ -79,6 +115,7 @@
   <script src="./js/gundamRunner.js"></script>
   <script src="./js/kirbyRunner.js"></script>
   <script src="./js/marioEscape.js"></script>
+  <script src="./js/mathQuiz.js"></script>
   <script src="./js/main.js"></script>
 </body>
 
