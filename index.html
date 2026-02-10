@@ -3,26 +3,65 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Teachable Machine Pose Model</title>
+  <title>포즈 게임즈 🎮</title>
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 
 <body>
-  <h1>Fruit Catcher 🍎🍌💣</h1>
+  <h1>포즈 게임즈 🎮</h1>
 
-  <div class="main-container">
+  <!-- 게임 선택 화면 -->
+  <div id="game-select" class="game-select">
+    <p class="select-subtitle">게임을 선택하세요!</p>
+    <div class="card-container">
+      <div class="game-card" onclick="selectGame('fruit')">
+        <div class="card-icon">🍎</div>
+        <div class="card-title">과일 받아먹기</div>
+        <div class="card-desc">포즈를 취해 창으로 과일을 받으세요!<br>폭탄은 피하기!</div>
+        <div class="card-control">🎥 포즈 인식 조작</div>
+      </div>
+      <div class="game-card" onclick="selectGame('bird')">
+        <div class="card-icon">✈️</div>
+        <div class="card-title">버드스트라이크 피하기</div>
+        <div class="card-desc">비행기를 조종해 새를 피하세요!<br>별과 다이아를 모으기!</div>
+        <div class="card-control">⌨️ 키보드 방향키 조작</div>
+      </div>
+      <div class="game-card" onclick="selectGame('gundam')">
+        <div class="card-icon">🤖</div>
+        <div class="card-title">건담 러너</div>
+        <div class="card-desc">건담이 달려가며 자쿠를 부수세요!<br>빔사벨로 공격!</div>
+        <div class="card-control">⌨️ 스페이스바 공격</div>
+      </div>
+      <div class="game-card" onclick="selectGame('kirby')">
+        <div class="card-icon">💛</div>
+        <div class="card-title">커비 플라잉 러너</div>
+        <div class="card-desc">커비가 날아서 장애물을 피하세요!<br>스페이스바 꿈 누르기!</div>
+        <div class="card-control">⌨️ 스페이스바 날기</div>
+      </div>
+      <div class="game-card" onclick="selectGame('mario')">
+        <div class="card-icon">🍄</div>
+        <div class="card-title">마리오 탈출</div>
+        <div class="card-desc">마리오는 서바이벌! <br>버섯들을 피해 살아남으세요!</div>
+        <div class="card-control">⌨️ 방향키 이동</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 플레이 화면 (초기에는 숨김) -->
+  <div class="main-container" id="game-container" style="display: none;">
     <div class="controls">
       <div id="max-prediction">준비 중...</div>
       <div id="label-container"></div>
       <div class="button-group">
-        <button type="button" id="startBtn" onclick="init()">Start</button>
-        <button type="button" id="stopBtn" onclick="stop()" disabled>Stop</button>
+        <button type="button" id="startBtn" onclick="init()">시작</button>
+        <button type="button" id="stopBtn" onclick="stop()" disabled>정지</button>
       </div>
+      <button type="button" class="back-btn" onclick="backToSelect()">← 게임 선택으로</button>
     </div>
 
     <div class="canvas-wrapper">
       <canvas id="canvas"></canvas>
-      <div id="game-status">Game Over!<br>Click Start to Restart</div>
+      <div id="game-status">게임 오버!<br>시작을 눌러주세요</div>
     </div>
   </div>
 
@@ -35,6 +74,10 @@
   <script src="./js/poseEngine.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/gameEngine.js"></script>
+  <script src="./js/birdStrike.js"></script>
+  <script src="./js/gundamRunner.js"></script>
+  <script src="./js/kirbyRunner.js"></script>
+  <script src="./js/marioEscape.js"></script>
   <script src="./js/main.js"></script>
 </body>
 

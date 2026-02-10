@@ -2,7 +2,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #222; /* 어두운 배경 */
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -16,9 +16,85 @@ body {
 h1 {
   margin-bottom: 20px;
   font-size: 2.5rem;
-  color: #f1c40f; /* 골드 컬러 */
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  color: #f1c40f;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
+
+/* ==================== */
+/* 게임 선택 화면       */
+/* ==================== */
+
+.game-select {
+  text-align: center;
+}
+
+.select-subtitle {
+  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 30px;
+}
+
+.card-container {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.game-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 30px 25px;
+  width: 220px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  text-align: center;
+}
+
+.game-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(241, 196, 15, 0.6);
+}
+
+.game-card:active {
+  transform: translateY(-5px) scale(1.01);
+}
+
+.card-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #f1c40f;
+  margin-bottom: 10px;
+}
+
+.card-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.card-control {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+}
+
+/* ==================== */
+/* 게임 플레이 화면     */
+/* ==================== */
 
 .main-container {
   display: flex;
@@ -41,7 +117,7 @@ h1 {
 
 #canvas {
   display: block;
-  background-color: #333; /* 캔버스 배경 */
+  background-color: #333;
 }
 
 /* 게임 오버 또는 상태 메시지 */
@@ -50,15 +126,16 @@ h1 {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.85);
   color: white;
-  padding: 20px 40px;
-  border-radius: 10px;
+  padding: 25px 40px;
+  border-radius: 15px;
   font-size: 24px;
   font-weight: bold;
   text-align: center;
-  display: none; /* 기본적으로 숨김 */
+  display: none;
   z-index: 10;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .controls {
@@ -81,23 +158,23 @@ button {
   font-weight: bold;
   cursor: pointer;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
 #startBtn {
-  background-color: #2ecc71;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
   color: white;
 }
 
 #stopBtn {
-  background-color: #e74c3c;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
 }
 
 button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 button:active:not(:disabled) {
@@ -105,9 +182,23 @@ button:active:not(:disabled) {
 }
 
 button:disabled {
-  background-color: #95a5a6;
+  background: #95a5a6;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  font-size: 14px !important;
+  padding: 10px !important;
+  margin-top: 5px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.back-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25) !important;
 }
 
 #label-container {
@@ -124,10 +215,10 @@ button:disabled {
 }
 
 #max-prediction {
-  background-color: #3498db;
+  background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 8px;
   text-align: center;
   font-size: 18px;
   font-weight: bold;

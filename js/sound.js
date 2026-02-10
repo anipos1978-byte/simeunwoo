@@ -160,6 +160,27 @@ class SoundManager {
             osc.stop(now + i * 0.1 + 0.3);
         });
     }
+
+    // 레벨업 소리 (라-시-도!)
+    playLevelUp() {
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        [440, 493, 523].forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 0.3, "sine", 0.1), i * 150);
+        });
+    }
+
+    // 아이템 업그레이드/총 획득 소리
+    playUpgrade() {
+        if (this.isMuted) return;
+        this.playTone(659, 0.1, "sine", 0.1); // E5
+        setTimeout(() => this.playTone(880, 0.2, "sine", 0.1), 100); // A5
+    }
+
+    // 총 발사 소리 (레이저/총)
+    playLaser() {
+        this.playShoot();
+    }
 }
 
 // 전역 인스턴스 생성

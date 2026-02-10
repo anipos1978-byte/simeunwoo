@@ -1,6 +1,6 @@
 /**
  * main.js
- * 포즈 인식과 게임 로직을 초기화하고 서로 연결하는 진입점
+ * 게임 선택 및 포즈 인식/게임 로직 초기화 진입점
  */
 
 // 전역 변수
@@ -10,6 +10,86 @@ let stabilizer;
 let ctx;
 let labelContainer;
 let isInitialized = false;
+let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario"
+
+/**
+ * 게임 선택
+ */
+function selectGame(type) {
+  currentGameType = type;
+
+  const selectScreen = document.getElementById("game-select");
+  const gameContainer = document.getElementById("game-container");
+  const controlsDiv = document.querySelector(".controls");
+  const maxPredDiv = document.getElementById("max-prediction");
+  const labelDiv = document.getElementById("label-container");
+
+  selectScreen.style.display = "none";
+  gameContainer.style.display = "flex";
+
+  // 포즈 인식 불필요 게임은 UI 숨기기
+  if (type === "bird") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "버드스트라이크 피하기 ✈️";
+  } else if (type === "gundam") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "건담 러너 🤖⚔️";
+  } else if (type === "kirby") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "커비 플라잉 러너 💛";
+  } else if (type === "mario") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "마리오 탈출 🍄🏃";
+  } else {
+    maxPredDiv.style.display = "block";
+    labelDiv.style.display = "block";
+    document.querySelector("h1").textContent = "과일 받아먹기 🍎🍌💣";
+  }
+
+  // 기존 게임 엔진 정리
+  if (gameEngine && gameEngine.isGameActive) {
+    gameEngine.stop();
+  }
+  gameEngine = null;
+  isInitialized = false;
+}
+
+/**
+ * 게임 선택 화면으로 돌아가기
+ */
+function backToSelect() {
+  // 현재 게임 중지
+  if (gameEngine && gameEngine.isGameActive) {
+    gameEngine.stop();
+  }
+  gameEngine = null;
+  isInitialized = false;
+
+  // PoseEngine도 정지 (웹캠 해제)
+  if (poseEngine) {
+    poseEngine.stop();
+    poseEngine = null;
+  }
+
+  const selectScreen = document.getElementById("game-select");
+  const gameContainer = document.getElementById("game-container");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const gameStatus = document.getElementById("game-status");
+
+  selectScreen.style.display = "block";
+  gameContainer.style.display = "none";
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  gameStatus.style.display = "none";
+
+  document.querySelector("h1").textContent = "포즈 게임즈 🎮";
+  currentGameType = null;
+}
 
 /**
  * 애플리케이션 초기화 및 게임 시작
@@ -23,54 +103,95 @@ async function init() {
   startBtn.disabled = true;
 
   try {
-    // 최초 실행 시에만 엔진 초기화
-    if (!isInitialized) {
-      // 1. PoseEngine 초기화
-      // 내부 감지 해상도는 200으로 유지(성능), 캔버스 크기는 나중에 400으로 설정
-      poseEngine = new PoseEngine("./my_model/");
-      const { maxPredictions, webcam } = await poseEngine.init({
-        size: 200, // 감지용 내부 해상도
-        flip: true
-      });
-
-      // 2. Stabilizer 초기화
-      stabilizer = new PredictionStabilizer({
-        threshold: 0.7,
-        smoothingFrames: 3
-      });
-
-      // 3. GameEngine 초기화
-      gameEngine = new GameEngine();
-
-      // 4. 캔버스 설정 (화면 표시용 해상도 400x400)
-      // webcam.canvas는 200x200이지만, ctx.drawImage로 늘려서 그릴 예정
-      canvas.width = 400;
-      canvas.height = 400;
-      ctx = canvas.getContext("2d");
-
-      // 5. Label Container 설정
-      labelContainer = document.getElementById("label-container");
-      labelContainer.innerHTML = "";
-      for (let i = 0; i < maxPredictions; i++) {
-        const div = document.createElement("div");
-        labelContainer.appendChild(div);
+    if (currentGameType === "bird") {
+      // === 버드스트라이크 게임 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
       }
 
-      // 6. PoseEngine 콜백 설정
-      poseEngine.setPredictionCallback(handlePrediction);
-      poseEngine.setDrawCallback(drawPose);
+      gameEngine = new BirdStrikeEngine();
+      gameStatus.style.display = "none";
+      startBirdStrikeMode();
 
-      // 7. PoseEngine 시작
-      poseEngine.start();
+    } else if (currentGameType === "gundam") {
+      // === 건담 러너 게임 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
 
-      isInitialized = true;
+      gameEngine = new GundamRunnerEngine();
+      gameStatus.style.display = "none";
+      startGundamMode();
+
+    } else if (currentGameType === "kirby") {
+      // === 커비 플라잉 러너 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
+
+      gameEngine = new KirbyRunnerEngine();
+      gameStatus.style.display = "none";
+      startKirbyMode();
+
+    } else if (currentGameType === "mario") {
+      // === 마리오 탈출 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
+
+      gameEngine = new MarioEscapeEngine();
+      gameStatus.style.display = "none";
+      startMarioMode();
+
+    } else {
+      // === 과일 받아먹기 게임 ===
+      if (!isInitialized) {
+        poseEngine = new PoseEngine("./my_model/");
+        const { maxPredictions, webcam } = await poseEngine.init({
+          size: 200,
+          flip: true
+        });
+
+        stabilizer = new PredictionStabilizer({
+          threshold: 0.7,
+          smoothingFrames: 3
+        });
+
+        gameEngine = new GameEngine();
+
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+          const div = document.createElement("div");
+          labelContainer.appendChild(div);
+        }
+
+        poseEngine.setPredictionCallback(handlePrediction);
+        poseEngine.setDrawCallback(drawPose);
+        poseEngine.start();
+
+        isInitialized = true;
+      }
+
+      gameStatus.style.display = "none";
+      startGameMode({ timeLimit: 60 });
     }
-
-    // 게임 시작 (Init 완료 후 또는 재시작 시)
-    gameStatus.style.display = "none"; // 게임 오버 메시지 숨김
-    startGameMode({
-      timeLimit: 60
-    });
 
     stopBtn.disabled = false;
   } catch (error) {
@@ -81,37 +202,44 @@ async function init() {
 }
 
 /**
- * 애플리케이션 중지
+ * 게임 중지
  */
 function stop() {
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
 
-  // 게임엔진만 멈추고, 웹캠은 계속 켜둘지 결정해야 함.
-  // 여기서는 게임만 멈춤
   if (gameEngine && gameEngine.isGameActive) {
     gameEngine.stop();
   }
 
-  // 전체 정지를 원하면 아래 주석 해제
-  /*
-  if (poseEngine) {
-    poseEngine.stop();
+  // 렌더 루프 중지
+  if (birdRenderLoopId) {
+    cancelAnimationFrame(birdRenderLoopId);
+    birdRenderLoopId = null;
   }
-  */
+  if (gundamRenderLoopId) {
+    cancelAnimationFrame(gundamRenderLoopId);
+    gundamRenderLoopId = null;
+  }
+  if (kirbyRenderLoopId) {
+    cancelAnimationFrame(kirbyRenderLoopId);
+    kirbyRenderLoopId = null;
+  }
+  if (marioRenderLoopId) {
+    cancelAnimationFrame(marioRenderLoopId);
+    marioRenderLoopId = null;
+  }
 
   startBtn.disabled = false;
   stopBtn.disabled = true;
 }
 
 /**
- * 예측 결과 처리 콜백
+ * 예측 결과 처리 콜백 (과일 받아먹기용)
  */
 function handlePrediction(predictions, pose) {
-  // 1. Stabilizer로 예측 안정화
   const stabilized = stabilizer.stabilize(predictions);
 
-  // 2. Label Container 업데이트
   if (labelContainer && labelContainer.childNodes.length > 0) {
     for (let i = 0; i < predictions.length; i++) {
       const classPrediction =
@@ -120,7 +248,6 @@ function handlePrediction(predictions, pose) {
     }
   }
 
-  // 3. 최고 확률 예측 표시
   const maxPredictionDiv = document.getElementById("max-prediction");
   if (maxPredictionDiv) {
     maxPredictionDiv.innerHTML = stabilized.className
@@ -128,62 +255,50 @@ function handlePrediction(predictions, pose) {
       : "감지 중...";
   }
 
-  // 4. GameEngine에 포즈 전달
   if (gameEngine && gameEngine.isGameActive && stabilized.className) {
     gameEngine.onPoseDetected(stabilized.className);
   }
 }
 
 /**
- * 포즈 그리기 콜백
+ * 포즈 그리기 콜백 (과일 받아먹기용)
  */
 function drawPose(pose) {
   if (poseEngine.webcam && poseEngine.webcam.canvas) {
-    // 200x200 웹캠 영상을 400x400 캔버스에 그림
     ctx.drawImage(poseEngine.webcam.canvas, 0, 0, 400, 400);
 
-    // 키포인트와 스켈레톤 그리기 (스케일 조정 필요)
     if (pose) {
       const minPartConfidence = 0.5;
-      // tmPose.drawKeypoints는 캔버스 컨텍스트에 그리지만, 
-      // 좌표가 200 기준이므로 ctx.scale 처리가 필요함
       ctx.save();
-      ctx.scale(2, 2); // 200 -> 400 (2배 확대)
+      ctx.scale(2, 2);
       tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
       tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
       ctx.restore();
     }
 
-    // 게임 요소 그리기 (바구니, 아이템 등)
     if (gameEngine && gameEngine.isGameActive) {
       gameEngine.draw(ctx);
     }
   }
 }
 
-// 게임 모드 설정
+// 과일 받아먹기 게임 모드
 function startGameMode(config) {
   if (!gameEngine) return;
 
-  // 점수 변경 콜백
   gameEngine.setScoreChangeCallback((score, level) => {
-    /* 
-       별도 UI 없이 캔버스에 점수 그림 
-       필요 시 여기서 HTML 업데이트 가능
-    */
+    // 캔버스에 직접 그림
   });
 
-  // 게임 종료 콜백
   gameEngine.setGameEndCallback((finalScore, finalLevel) => {
     const gameStatus = document.getElementById("game-status");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
 
-    // 게임 오버 메시지 표시
     gameStatus.innerHTML = `
-      GAME OVER<br>
-      Score: ${finalScore}<br>
-      <span style="font-size: 16px;">Click Start to Restart</span>
+      게임 오버<br>
+      점수: ${finalScore}<br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
     `;
     gameStatus.style.display = "block";
 
@@ -192,4 +307,178 @@ function startGameMode(config) {
   });
 
   gameEngine.start(config);
+}
+
+// === 버드스트라이크 전용 ===
+let birdRenderLoopId = null;
+
+function startBirdStrikeMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    // 렌더 루프 중지
+    if (birdRenderLoopId) {
+      cancelAnimationFrame(birdRenderLoopId);
+      birdRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${Math.floor(finalScore)}<br>
+      레벨: ${finalLevel}<br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  // 렌더 루프
+  function renderLoop() {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+    gameEngine.draw(ctx);
+    birdRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  birdRenderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// === 건담 러너 전용 ===
+let gundamRenderLoopId = null;
+
+function startGundamMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (gundamRenderLoopId) {
+      cancelAnimationFrame(gundamRenderLoopId);
+      gundamRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${Math.floor(finalScore)}<br>
+      레벨: ${finalLevel}<br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  function renderLoop() {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+    gameEngine.draw(ctx);
+    gundamRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  gundamRenderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// === 커비 플라잉 러너 전용 ===
+let kirbyRenderLoopId = null;
+
+function startKirbyMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (kirbyRenderLoopId) {
+      cancelAnimationFrame(kirbyRenderLoopId);
+      kirbyRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${Math.floor(finalScore)}<br>
+      레벨: ${finalLevel}<br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  function renderLoop() {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+    gameEngine.draw(ctx);
+    kirbyRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  kirbyRenderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// === 마리오 탈출 전용 ===
+let marioRenderLoopId = null;
+
+function startMarioMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (marioRenderLoopId) {
+      cancelAnimationFrame(marioRenderLoopId);
+      marioRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${Math.floor(finalScore)}<br>
+      레벨: ${finalLevel}<br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  function renderLoop(timestamp) {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+
+    // 엔진 업데이트 명시적 호출 (main의 context를 사용하기 위해 렌더 루프 분리)
+    gameEngine.update(timestamp);
+    gameEngine.draw(ctx);
+
+    marioRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  marioRenderLoopId = requestAnimationFrame(renderLoop);
 }
