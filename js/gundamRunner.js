@@ -22,9 +22,9 @@ class GundamRunnerEngine {
         // 건담 상태 (1레인 - 화면 중앙)
         this.gundam = {
             x: 60,
-            y: 280,
+            y: 260, // 키가 커졌으므로 y 위치를 살짝 올려서 바닥에 맞춤 (기존 280)
             width: 50,
-            height: 60,
+            height: 80, // 키 늘림 (기존 60)
             isAttacking: false,
             attackFrame: 0,
             attackDuration: 15
@@ -53,6 +53,28 @@ class GundamRunnerEngine {
 
         // 키보드 바인딩
         this._onKeyDown = this._handleKeyDown.bind(this);
+
+        // 이미지 로드 (건담 & 자쿠)
+        this.gundamImg = new Image();
+        this.gundamImg.src = 'assets/images/gundam.png';
+        this.isGundamImgLoaded = false;
+        this.gundamImg.onload = () => {
+            this.processImageBackground(this.gundamImg, (img) => {
+                this.gundamImg = img;
+                this.isGundamImgLoaded = true;
+            });
+        };
+
+        this.zakuImg = new Image();
+        this.zakuImg.src = 'assets/images/zaku.png';
+        this.isZakuImgLoaded = false;
+        this.zakuImg.onload = () => {
+            this.processImageBackground(this.zakuImg, (img) => {
+                this.zakuImg = img;
+                this.isZakuImgLoaded = true;
+                this.prepareBossImage(); // 자쿠 로드 후 보스(빨간색) 이미지 생성
+            });
+        };
     }
 
     start() {
@@ -327,16 +349,16 @@ class GundamRunnerEngine {
             // 일반 자쿠 (75%)
             type = "zaku";
             width = 45;
-            height = 55;
+            height = 75; // 키 늘림 (기존 55)
             speedMult = 0.8 + Math.random() * 0.5;
             yOffset = 0;
         } else {
             // 보스 자쿠 - 샤아 전용기 (25%)
             type = "boss";
             width = 55;
-            height = 65;
+            height = 90; // 키 늘림 (기존 65)
             speedMult = 0.5 + Math.random() * 0.3;
-            yOffset = -5;
+            yOffset = -15; // 키가 커진 만큼 위치 조정
         }
 
         this.enemies.push({
@@ -537,14 +559,73 @@ class GundamRunnerEngine {
         }
     }
 
+    processImageBackground(imgObj, callback) {
+        // 배경 제거 로직 (Mario Escape와 동일하게 강력한 버전 적용)
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = imgObj.width;
+        tempCanvas.height = imgObj.height;
+        tempCtx.drawImage(imgObj, 0, 0);
+
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // 1. 아주 밝은 흰색 계열
+            const isWhite = r > 235 && g > 235 && b > 235;
+            // 2. 전형적인 회색 체크무늬 (무채색 & 밝음)
+            const diff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(b - r));
+            const isNeutral = diff < 10;
+            const isLightColor = (r + g + b) / 3 > 180;
+            // 3. 특정 회색톤
+            const isCheckerboardGray = (r > 180 && r < 225) && (g > 180 && g < 225) && (b > 180 && b < 225);
+
+            if (isWhite || (isNeutral && isLightColor) || isCheckerboardGray) {
+                data[i + 3] = 0;
+            }
+        }
+
+        tempCtx.putImageData(imageData, 0, 0);
+        const processedImg = new Image();
+        processedImg.src = tempCanvas.toDataURL();
+        processedImg.onload = () => {
+            callback(processedImg);
+        };
+    }
+
+    prepareBossImage() {
+        // 자쿠 이미지를 빨간색으로 틴트(tint)하여 보스 이미지 생성
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = this.zakuImg.width;
+        canvas.height = this.zakuImg.height;
+
+        // 원본 그리기
+        ctx.drawImage(this.zakuImg, 0, 0);
+
+        // 빨간색 오버레이
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; // 붉은 틴트
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'source-over';
+
+        this.bossImg = new Image();
+        this.bossImg.src = canvas.toDataURL();
+    }
+
     drawGundam(ctx) {
         const gx = this.gundam.x;
         const gy = this.gundam.y;
         const gw = this.gundam.width;
         const gh = this.gundam.height;
 
-        // 달리기 애니메이션
+        // 달리기 애니메이션 (위아래 바운스)
         const runCycle = Math.sin(Date.now() * 0.012) * 2;
+        const bounceY = gy + runCycle;
 
         // 그림자
         ctx.fillStyle = "rgba(0,0,0,0.3)";
@@ -552,64 +633,29 @@ class GundamRunnerEngine {
         ctx.ellipse(gx + gw / 2, gy + gh - 3, 25, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 건담 몸체 (흰색)
-        ctx.fillStyle = "#F5F5F5";
-        ctx.fillRect(gx + 12, gy - 22 + runCycle, gw - 24, gh - 12);
+        if (this.isGundamImgLoaded) {
+            // 이미지로 그리기
+            ctx.drawImage(this.gundamImg, gx - 10, bounceY - 10, gw + 20, gh + 15);
+        } else {
+            // 폴백 (기존 도트 건담)
+            // 건담 몸체 (흰색)
+            ctx.fillStyle = "#F5F5F5";
+            ctx.fillRect(gx + 12, gy - 22 + runCycle, gw - 24, gh - 12);
+            // ... (기존 그리기 코드 생략 - 너무 길어서 이미지 로드 실패 시 간단한 박스로 대체하거나, 기존 코드를 유지해도 됨)
+            // 편의상 여기서는 기존 정교한 그리기 코드를 전부 유지하기엔 너무 기므로, 
+            // 핵심 형태만 간단히 폴백으로 남깁니다.
+            ctx.fillStyle = "#1565C0"; // 몸통
+            ctx.fillRect(gx + 15, bounceY, gw - 30, gh - 20);
+        }
 
-        // 가슴 (파란색)
-        ctx.fillStyle = "#1565C0";
-        ctx.beginPath();
-        ctx.moveTo(gx + 14, gy - 10 + runCycle);
-        ctx.lineTo(gx + gw - 14, gy - 10 + runCycle);
-        ctx.lineTo(gx + gw / 2, gy + 5 + runCycle);
-        ctx.closePath();
-        ctx.fill();
-
-        // 콕핏 (빨간색)
-        ctx.fillStyle = "#D32F2F";
-        ctx.beginPath();
-        ctx.arc(gx + gw / 2, gy - 2 + runCycle, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 머리
-        ctx.fillStyle = "#E0E0E0";
-        ctx.beginPath();
-        ctx.arc(gx + gw / 2, gy - 26 + runCycle, 11, 0, Math.PI * 2);
-        ctx.fill();
-
-        // V자 앙테나 (노랑)
-        ctx.strokeStyle = "#FFD600";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(gx + gw / 2 - 13, gy - 43 + runCycle);
-        ctx.lineTo(gx + gw / 2, gy - 30 + runCycle);
-        ctx.lineTo(gx + gw / 2 + 13, gy - 43 + runCycle);
-        ctx.stroke();
-
-        // 눈 (노랑)
-        ctx.fillStyle = "#FFEB3B";
-        ctx.fillRect(gx + gw / 2 - 7, gy - 28 + runCycle, 14, 4);
-
-        // 마스크
-        ctx.fillStyle = "#BDBDBD";
-        ctx.fillRect(gx + gw / 2 - 5, gy - 22 + runCycle, 10, 3);
-
-        // 다리
-        ctx.fillStyle = "#F5F5F5";
-        ctx.fillRect(gx + 14, gy + gh - 38 + runCycle, 9, 18);
-        ctx.fillRect(gx + gw - 23, gy + gh - 38 + runCycle, 9, 18);
-        // 빨간 발
-        ctx.fillStyle = "#D32F2F";
-        ctx.fillRect(gx + 12, gy + gh - 22 + runCycle, 12, 5);
-        ctx.fillRect(gx + gw - 24, gy + gh - 22 + runCycle, 12, 5);
-
-        // === 빔사벨 ===
+        // === 빔사벨 (이미지 위에도 그려야 함) ===
         if (this.gundam.isAttacking) {
             const progress = 1 - (this.gundam.attackFrame / this.gundam.attackDuration);
             const saberAngle = -Math.PI / 3 + progress * Math.PI * 0.6;
 
             ctx.save();
-            ctx.translate(gx + gw - 5, gy - 10 + runCycle);
+            // 이미지 기준 손 위치 대략 추정
+            ctx.translate(gx + gw - 5, bounceY + 10);
             ctx.rotate(saberAngle);
 
             // 빔 그라디언트
@@ -624,25 +670,16 @@ class GundamRunnerEngine {
             ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
             ctx.fillRect(0, -2, 75, 4);
 
-            // 손잡이
-            ctx.fillStyle = "#888";
-            ctx.fillRect(-8, -4, 10, 8);
-
             ctx.restore();
 
             // 글로우
             ctx.fillStyle = "rgba(255, 100, 200, 0.12)";
             ctx.beginPath();
-            ctx.arc(gx + gw + 30, gy + runCycle, 50, 0, Math.PI * 2);
+            ctx.arc(gx + gw + 30, bounceY + 20, 50, 0, Math.PI * 2);
             ctx.fill();
         } else {
-            // 대기 - 실드 들고 있기
-            ctx.fillStyle = "#1565C0";
-            ctx.fillRect(gx - 8, gy - 15 + runCycle, 10, 30);
-            // 실드 십자
-            ctx.fillStyle = "#FDD835";
-            ctx.fillRect(gx - 5, gy - 5 + runCycle, 4, 10);
-            ctx.fillRect(gx - 7, gy - 1 + runCycle, 8, 3);
+            // 대기 상태일 때 빔사벨 손잡이나 방패는 이미지에 포함되어 있다고 가정하거나
+            // 필요하면 추가로 그릴 수 있음. 일단은 생략.
         }
     }
 
@@ -658,72 +695,40 @@ class GundamRunnerEngine {
         ctx.ellipse(ex + ew / 2, ey + eh - 3, 20, 5, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        if (e.type === "boss") {
-            // === 샤아 전용 자쿠 (빨간색) ===
-            // 몸체
-            ctx.fillStyle = "#CC0000";
-            ctx.fillRect(ex + 10, ey - 15, ew - 20, eh - 10);
-            // 머리
-            ctx.fillStyle = "#AA0000";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2, ey - 18, 14, 0, Math.PI * 2);
-            ctx.fill();
-            // 모노아이
-            ctx.fillStyle = "#FF69B4";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2 + 3, ey - 18, 4, 0, Math.PI * 2);
-            ctx.fill();
-            // 모노아이 글로우
-            ctx.fillStyle = "rgba(255, 105, 180, 0.3)";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2 + 3, ey - 18, 8, 0, Math.PI * 2);
-            ctx.fill();
-            // 뿔
-            ctx.strokeStyle = "#FF4444";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(ex + ew / 2, ey - 32);
-            ctx.lineTo(ex + ew / 2 - 10, ey - 45);
-            ctx.stroke();
-            // 다리
-            ctx.fillStyle = "#990000";
-            ctx.fillRect(ex + 12, ey + eh - 30, 10, 15);
-            ctx.fillRect(ex + ew - 22, ey + eh - 30, 10, 15);
-            // 왼쪽 실드
-            ctx.fillStyle = "#880000";
-            ctx.fillRect(ex - 2, ey - 5, 10, 25);
+        if (e.type === "boss" && this.bossImg) {
+            // 보스 (빨간색 틴트된 이미지)
+            ctx.drawImage(this.bossImg, ex - 10, ey - 10, ew + 20, eh + 15);
+        } else if (e.type !== "boss" && this.isZakuImgLoaded) {
+            // 일반 자쿠 (초록색 원본 이미지)
+            ctx.drawImage(this.zakuImg, ex - 10, ey - 10, ew + 20, eh + 15);
         } else {
-            // === 일반 자쿠 (초록색) ===
-            // 몸체
-            ctx.fillStyle = "#2E7D32";
-            ctx.fillRect(ex + 8, ey - 13, ew - 16, eh - 12);
-            // 머리
-            ctx.fillStyle = "#1B5E20";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2, ey - 16, 12, 0, Math.PI * 2);
-            ctx.fill();
-            // 모노아이 (빨간색)
-            ctx.fillStyle = "#FF0000";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2 + 2, ey - 16, 3, 0, Math.PI * 2);
-            ctx.fill();
-            // 모노아이 글로우
-            ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2 + 2, ey - 16, 7, 0, Math.PI * 2);
-            ctx.fill();
-            // 파이프
-            ctx.fillStyle = "#388E3C";
-            ctx.beginPath();
-            ctx.arc(ex + ew / 2 - 10, ey - 12, 4, 0, Math.PI * 2);
-            ctx.fill();
-            // 다리
-            ctx.fillStyle = "#1B5E20";
-            ctx.fillRect(ex + 10, ey + eh - 28, 8, 14);
-            ctx.fillRect(ex + ew - 18, ey + eh - 28, 8, 14);
-            // 무기 (머신건)
-            ctx.fillStyle = "#555";
-            ctx.fillRect(ex - 8, ey, 15, 5);
+            // 폴백 (기존 도트 자쿠)
+            if (e.type === "boss") {
+                // 몸체
+                ctx.fillStyle = "#CC0000";
+                ctx.fillRect(ex + 10, ey - 15, ew - 20, eh - 10);
+                // 머리
+                ctx.fillStyle = "#AA0000";
+                ctx.beginPath();
+                ctx.arc(ex + ew / 2, ey - 18, 14, 0, Math.PI * 2);
+                ctx.fill();
+                // 뿔
+                ctx.strokeStyle = "#FF4444";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(ex + ew / 2, ey - 32);
+                ctx.lineTo(ex + ew / 2 - 10, ey - 45);
+                ctx.stroke();
+            } else {
+                // 몸체
+                ctx.fillStyle = "#2E7D32";
+                ctx.fillRect(ex + 8, ey - 13, ew - 16, eh - 12);
+                // 머리
+                ctx.fillStyle = "#1B5E20";
+                ctx.beginPath();
+                ctx.arc(ex + ew / 2, ey - 16, 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 

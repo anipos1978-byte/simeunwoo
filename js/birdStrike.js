@@ -60,6 +60,17 @@ class BirdStrikeEngine {
         // 키보드 이벤트 바인딩
         this._onKeyDown = this._handleKeyDown.bind(this);
         this._onKeyUp = this._handleKeyUp.bind(this);
+
+        // 이미지 로드
+        this.planeImg = new Image();
+        this.planeImg.src = 'assets/images/plane.png';
+        this.isPlaneImgLoaded = false;
+        this.planeImg.onload = () => {
+            this.processImageBackground(this.planeImg, (img) => {
+                this.planeImg = img;
+                this.isPlaneImgLoaded = true;
+            });
+        };
     }
 
     start() {
@@ -469,54 +480,71 @@ class BirdStrikeEngine {
             ctx.closePath();
             ctx.fill();
 
-            // 비행기 몸체
-            ctx.fillStyle = "#E0E0E0";
-            ctx.beginPath();
-            ctx.moveTo(px + pw / 2, py);            // 코
-            ctx.lineTo(px + pw * 0.7, py + ph * 0.3);
-            ctx.lineTo(px + pw * 0.7, py + ph);
-            ctx.lineTo(px + pw * 0.3, py + ph);
-            ctx.lineTo(px + pw * 0.3, py + ph * 0.3);
-            ctx.closePath();
-            ctx.fill();
+            if (this.isPlaneImgLoaded) {
+                // 이미지 뒤집기? 비행기 이미지가 위를 보고 있다면 그대로 그림
+                // 만약 이미지가 너무 크다면 스케일 조정 필요할 수 있음. 
+                // 일단 pw, ph에 맞춰 그림.
+                // 이미지가 '전투기' 형태인지 '여객기' 형태인지에 따라 비율이 다를 수 있음.
+                // 제공된 이미지를 최대한 박스 안에 맞춤.
 
-            // 날개
-            ctx.fillStyle = "#B0B0B0";
-            // 왼쪽 날개
-            ctx.beginPath();
-            ctx.moveTo(px + pw * 0.3, py + ph * 0.4);
-            ctx.lineTo(px - 10, py + ph * 0.7);
-            ctx.lineTo(px + pw * 0.3, py + ph * 0.7);
-            ctx.closePath();
-            ctx.fill();
-            // 오른쪽 날개
-            ctx.beginPath();
-            ctx.moveTo(px + pw * 0.7, py + ph * 0.4);
-            ctx.lineTo(px + pw + 10, py + ph * 0.7);
-            ctx.lineTo(px + pw * 0.7, py + ph * 0.7);
-            ctx.closePath();
-            ctx.fill();
+                // 그림자 (이미지일 때)
+                ctx.fillStyle = "rgba(0,0,0,0.2)";
+                ctx.beginPath();
+                ctx.ellipse(px + pw / 2, py + ph + 10, pw / 2, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
 
-            // 꼬리 날개
-            ctx.fillStyle = "#C0C0C0";
-            ctx.beginPath();
-            ctx.moveTo(px + pw * 0.35, py + ph * 0.85);
-            ctx.lineTo(px + pw * 0.15, py + ph);
-            ctx.lineTo(px + pw * 0.35, py + ph);
-            ctx.closePath();
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(px + pw * 0.65, py + ph * 0.85);
-            ctx.lineTo(px + pw * 0.85, py + ph);
-            ctx.lineTo(px + pw * 0.65, py + ph);
-            ctx.closePath();
-            ctx.fill();
+                ctx.drawImage(this.planeImg, px - 10, py - 10, pw + 20, ph + 20); // 약간 여유 있게
+            } else {
+                // 폴백 (기존 그리기 코드)
+                // 비행기 몸체
+                ctx.fillStyle = "#E0E0E0";
+                ctx.beginPath();
+                ctx.moveTo(px + pw / 2, py);            // 코
+                ctx.lineTo(px + pw * 0.7, py + ph * 0.3);
+                ctx.lineTo(px + pw * 0.7, py + ph);
+                ctx.lineTo(px + pw * 0.3, py + ph);
+                ctx.lineTo(px + pw * 0.3, py + ph * 0.3);
+                ctx.closePath();
+                ctx.fill();
 
-            // 조종석 (창문)
-            ctx.fillStyle = "#4FC3F7";
-            ctx.beginPath();
-            ctx.arc(px + pw / 2, py + ph * 0.25, 5, 0, Math.PI * 2);
-            ctx.fill();
+                // 날개
+                ctx.fillStyle = "#B0B0B0";
+                // 왼쪽 날개
+                ctx.beginPath();
+                ctx.moveTo(px + pw * 0.3, py + ph * 0.4);
+                ctx.lineTo(px - 10, py + ph * 0.7);
+                ctx.lineTo(px + pw * 0.3, py + ph * 0.7);
+                ctx.closePath();
+                ctx.fill();
+                // 오른쪽 날개
+                ctx.beginPath();
+                ctx.moveTo(px + pw * 0.7, py + ph * 0.4);
+                ctx.lineTo(px + pw + 10, py + ph * 0.7);
+                ctx.lineTo(px + pw * 0.7, py + ph * 0.7);
+                ctx.closePath();
+                ctx.fill();
+
+                // 꼬리 날개
+                ctx.fillStyle = "#C0C0C0";
+                ctx.beginPath();
+                ctx.moveTo(px + pw * 0.35, py + ph * 0.85);
+                ctx.lineTo(px + pw * 0.15, py + ph);
+                ctx.lineTo(px + pw * 0.35, py + ph);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(px + pw * 0.65, py + ph * 0.85);
+                ctx.lineTo(px + pw * 0.85, py + ph);
+                ctx.lineTo(px + pw * 0.65, py + ph);
+                ctx.closePath();
+                ctx.fill();
+
+                // 조종석 (창문)
+                ctx.fillStyle = "#4FC3F7";
+                ctx.beginPath();
+                ctx.arc(px + pw / 2, py + ph * 0.25, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
         // 무적 실드 효과
@@ -590,6 +618,44 @@ class BirdStrikeEngine {
             ctx.textAlign = "center";
             ctx.fillText("← → 방향키로 레인을 이동하세요!", 200, 380);
         }
+    }
+
+    processImageBackground(imgObj, callback) {
+        // 배경 제거 로직 (Mario Escape와 동일하게 강력한 버전 적용)
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = imgObj.width;
+        tempCanvas.height = imgObj.height;
+        tempCtx.drawImage(imgObj, 0, 0);
+
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // 1. 아주 밝은 흰색 계열
+            const isWhite = r > 235 && g > 235 && b > 235;
+            // 2. 전형적인 회색 체크무늬 (무채색 & 밝음)
+            const diff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(b - r));
+            const isNeutral = diff < 10;
+            const isLightColor = (r + g + b) / 3 > 180;
+            // 3. 특정 회색톤
+            const isCheckerboardGray = (r > 180 && r < 225) && (g > 180 && g < 225) && (b > 180 && b < 225);
+
+            if (isWhite || (isNeutral && isLightColor) || isCheckerboardGray) {
+                data[i + 3] = 0;
+            }
+        }
+
+        tempCtx.putImageData(imageData, 0, 0);
+        const processedImg = new Image();
+        processedImg.src = tempCanvas.toDataURL();
+        processedImg.onload = () => {
+            callback(processedImg);
+        };
     }
 
     // 콜백 등록

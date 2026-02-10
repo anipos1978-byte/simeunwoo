@@ -224,3 +224,23 @@ button:disabled {
   font-weight: bold;
   margin-bottom: 15px;
 }
+
+/* 저자 크레딧 스타일 */
+.author-credit {
+  position: fixed;
+  bottom: 25px;
+  left: 25px;
+  font-size: 1.2rem;
+  /* 기존 0.9rem에서 확대 */
+  color: rgba(255, 255, 255, 0.8);
+  /* 더 선명하게 변경 */
+  font-weight: bold;
+  letter-spacing: 0.8px;
+  pointer-events: none;
+  z-index: 100;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.author-credit::before {
+  content: '✨ ';
+}

@@ -22,12 +22,43 @@ class MarioEscapeEngine {
         this.mario = {
             x: 200,
             y: 200,
-            width: 30,
-            height: 30,
+            width: 32,
+            height: 38, // 이미지 비율에 맞춰 조정
             speed: 4,
             facing: 'right',
             hasGun: false,
             ammo: 0
+        };
+
+        // 이미지 로드 및 배경 제거 처리
+        this.marioImg = new Image();
+        this.marioImg.src = 'assets/images/mario.png';
+        this.isMarioImgLoaded = false;
+        this.marioImg.onload = () => {
+            this.processImageBackground(this.marioImg, (img) => {
+                this.marioImg = img;
+                this.isMarioImgLoaded = true;
+            });
+        };
+
+        this.goombaImg = new Image();
+        this.goombaImg.src = 'assets/images/goomba.png';
+        this.isGoombaImgLoaded = false;
+        this.goombaImg.onload = () => {
+            this.processImageBackground(this.goombaImg, (img) => {
+                this.goombaImg = img;
+                this.isGoombaImgLoaded = true;
+            });
+        };
+
+        this.coinImg = new Image();
+        this.coinImg.src = 'assets/images/coin.png';
+        this.isCoinImgLoaded = false;
+        this.coinImg.onload = () => {
+            this.processImageBackground(this.coinImg, (img) => {
+                this.coinImg = img;
+                this.isCoinImgLoaded = true;
+            });
         };
 
         // 적 (버섯/굼바)
@@ -291,6 +322,48 @@ class MarioEscapeEngine {
         if (window.soundManager) window.soundManager.playLaser();
     }
 
+    processImageBackground(imgObj, callback) {
+        // 체크무늬 배경 제거 (배경 없애달라는 요청 반영)
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = imgObj.width;
+        tempCanvas.height = imgObj.height;
+        tempCtx.drawImage(imgObj, 0, 0);
+
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // 체크무늬 배경 제거 로직 강화
+            // 1. 아주 밝은 흰색 계열 (r,g,b 모두 235 이상)
+            const isWhite = r > 235 && g > 235 && b > 235;
+
+            // 2. 전형적인 회색 체크무늬 (어두운 흰색 ~ 밝은 회색)
+            // r,g,b 값이 서로 비슷하면서(무채색) 특정 밝기 이상인 경우
+            const diff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(b - r));
+            const isNeutral = diff < 10; // 색상 차이가 적음 (무채색에 가까움)
+            const isLightColor = (r + g + b) / 3 > 180; // 밝기 180 이상
+
+            // 굼바 이미지 특유의 살짝 푸른기 도는 회색 체크무늬 대응
+            const isCheckerboardGray = (r > 180 && r < 225) && (g > 180 && g < 225) && (b > 180 && b < 225);
+
+            if (isWhite || (isNeutral && isLightColor) || isCheckerboardGray) {
+                data[i + 3] = 0; // 투명하게
+            }
+        }
+
+        tempCtx.putImageData(imageData, 0, 0);
+        const processedImg = new Image();
+        processedImg.src = tempCanvas.toDataURL();
+        processedImg.onload = () => {
+            callback(processedImg);
+        };
+    }
+
     checkCollision(a, b) {
         return (
             a.x < b.x + b.width &&
@@ -342,12 +415,16 @@ class MarioEscapeEngine {
                 ctx.fillStyle = '#FFD700'; // 장식 포인트
                 ctx.fillRect(item.x + 12, item.y + 11 + bounce, 2, 2);
             } else {
-                ctx.fillStyle = '#FFD700'; // 코인 금색
-                ctx.beginPath();
-                ctx.ellipse(item.x + 10, item.y + 10 + bounce, 8, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#B8860B';
-                ctx.stroke();
+                if (this.isCoinImgLoaded) {
+                    ctx.drawImage(this.coinImg, item.x, item.y + bounce, item.width, item.height);
+                } else {
+                    ctx.fillStyle = '#FFD700'; // 코인 금색
+                    ctx.beginPath();
+                    ctx.ellipse(item.x + 10, item.y + 10 + bounce, 8, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#B8860B';
+                    ctx.stroke();
+                }
             }
             ctx.restore();
         }
@@ -396,46 +473,65 @@ class MarioEscapeEngine {
     drawMario(ctx, m) {
         ctx.save();
         ctx.translate(m.x + m.width / 2, m.y + m.height / 2);
+
+        // 그림자
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.beginPath();
+        ctx.ellipse(0, m.height / 2 + 2, 12, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
         if (m.facing === 'left') ctx.scale(-1, 1);
 
-        // 모자
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(-10, -15, 20, 8);
-        ctx.fillRect(-15, -10, 25, 3); // 챙
+        if (this.isMarioImgLoaded) {
+            // 이미지 그리기
+            ctx.drawImage(this.marioImg, -m.width / 2, -m.height / 2, m.width, m.height);
 
-        // 얼굴
-        ctx.fillStyle = '#FFCC99';
-        ctx.fillRect(-10, -7, 18, 12);
+            // 총 (가지고 있을 때) - 이미지 위치에 맞춰 살짝 조정
+            if (m.hasGun) {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(8, 0, 12, 5); // 총구
+                ctx.fillRect(8, 3, 3, 6);  // 손잡이
+            }
+        } else {
+            // 폴백 (이미지 로드 전이나 실패 시 기존처럼 그리기)
+            // 모자
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(-10, -15, 20, 8);
+            ctx.fillRect(-15, -10, 25, 3); // 챙
 
-        // 눈
-        ctx.fillStyle = 'black';
-        ctx.fillRect(2, -4, 3, 4);
+            // 얼굴
+            ctx.fillStyle = '#FFCC99';
+            ctx.fillRect(-10, -7, 18, 12);
 
-        // 수염
-        ctx.fillStyle = '#663300';
-        ctx.fillRect(1, 2, 8, 3);
+            // 눈
+            ctx.fillStyle = 'black';
+            ctx.fillRect(2, -4, 3, 4);
 
-        // 옷/몸체
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(-10, 5, 20, 10);
-        // 멜빵바지
-        ctx.fillStyle = '#0000FF';
-        ctx.fillRect(-10, 8, 20, 12);
-        ctx.fillRect(-10, 5, 4, 10);
-        ctx.fillRect(6, 5, 4, 10);
+            // 수염
+            ctx.fillStyle = '#663300';
+            ctx.fillRect(1, 2, 8, 3);
 
-        // 총 (가지고 있을 때)
-        if (m.hasGun) {
-            ctx.fillStyle = '#333';
-            ctx.fillRect(8, 4, 12, 5); // 총구
-            ctx.fillRect(8, 7, 3, 6);  // 손잡이
+            // 옷/몸체
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(-10, 5, 20, 10);
+            // 멜빵바지
+            ctx.fillStyle = '#0000FF';
+            ctx.fillRect(-10, 8, 20, 12);
+            ctx.fillRect(-10, 5, 4, 10);
+            ctx.fillRect(6, 5, 4, 10);
+
+            // 총 (가지고 있을 때)
+            if (m.hasGun) {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(8, 4, 12, 5); // 총구
+                ctx.fillRect(8, 7, 3, 6);  // 손잡이
+            }
+
+            // 신발
+            ctx.fillStyle = '#663300';
+            ctx.fillRect(-12, 16, 10, 5);
+            ctx.fillRect(2, 16, 10, 5);
         }
-
-
-        // 신발
-        ctx.fillStyle = '#663300';
-        ctx.fillRect(-12, 16, 10, 5);
-        ctx.fillRect(2, 16, 10, 5);
 
         ctx.restore();
     }
@@ -444,27 +540,38 @@ class MarioEscapeEngine {
         ctx.save();
         const float = Math.sin(Date.now() * 0.015 + e.x) * 2;
 
-        // 머리
-        ctx.fillStyle = '#8B4513';
+        // 그림자
+        ctx.fillStyle = "rgba(0,0,0,0.1)";
         ctx.beginPath();
-        ctx.moveTo(e.x, e.y + 15);
-        ctx.quadraticCurveTo(e.x + 12, e.y - 5, e.x + 25, e.y + 15);
-        ctx.lineTo(e.x + 25, e.y + e.height - 5);
-        ctx.lineTo(e.x, e.y + e.height - 5);
+        ctx.ellipse(e.x + e.width / 2, e.y + e.height - 2, 8, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 눈
-        ctx.fillStyle = 'white';
-        ctx.fillRect(e.x + 5, e.y + 5, 6, 8);
-        ctx.fillRect(e.x + 14, e.y + 5, 6, 8);
-        ctx.fillStyle = 'black';
-        ctx.fillRect(e.x + 7, e.y + 7, 2, 4);
-        ctx.fillRect(e.x + 16, e.y + 7, 2, 4);
+        if (this.isGoombaImgLoaded) {
+            ctx.drawImage(this.goombaImg, e.x, e.y + float, e.width, e.height);
+        } else {
+            // 폴백 (이미지 로드 전)
+            // 머리
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y + 15);
+            ctx.quadraticCurveTo(e.x + 12, e.y - 5, e.x + 25, e.y + 15);
+            ctx.lineTo(e.x + 25, e.y + e.height - 5);
+            ctx.lineTo(e.x, e.y + e.height - 5);
+            ctx.fill();
 
-        // 발
-        ctx.fillStyle = 'black';
-        ctx.fillRect(e.x + 2, e.y + e.height - 5, 8, 6);
-        ctx.fillRect(e.x + 15, e.y + e.height - 5, 8, 6);
+            // 눈
+            ctx.fillStyle = 'white';
+            ctx.fillRect(e.x + 5, e.y + 5, 6, 8);
+            ctx.fillRect(e.x + 14, e.y + 5, 6, 8);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(e.x + 7, e.y + 7, 2, 4);
+            ctx.fillRect(e.x + 16, e.y + 7, 2, 4);
+
+            // 발
+            ctx.fillStyle = 'black';
+            ctx.fillRect(e.x + 2, e.y + e.height - 5, 8, 6);
+            ctx.fillRect(e.x + 15, e.y + e.height - 5, 8, 6);
+        }
 
         ctx.restore();
     }
