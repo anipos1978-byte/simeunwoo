@@ -10,7 +10,8 @@ let stabilizer;
 let ctx;
 let labelContainer;
 let isInitialized = false;
-let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math"
+let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math", "defense", "dino"
+let currentMathLevel = 1;
 
 /**
  * 게임 선택
@@ -44,17 +45,19 @@ function selectGame(type) {
     maxPredDiv.style.display = "none";
     labelDiv.style.display = "none";
     document.querySelector("h1").textContent = "마리오 탈출 🍄🏃";
-  } else if (type.startsWith("math")) {
+  } else if (type === "math") {
     maxPredDiv.style.display = "none";
     labelDiv.style.display = "none";
-
-    // 난이도 파싱 (math1, math2, math3)
-    const level = parseInt(type.replace("math", ""));
-    const levelName = level === 1 ? "초등" : level === 2 ? "중등" : "고등";
-    document.querySelector("h1").textContent = `지루한 수학 퀴즈 (Lv.${level} ${levelName}) ✏️💯`;
-
-    // mathGame 시작을 위해 전역 변수 설정 (init에서 사용)
-    currentMathLevel = level;
+    const levelName = currentMathLevel === 1 ? "초등" : currentMathLevel === 2 ? "중등" : "고등";
+    document.querySelector("h1").textContent = `지루한 수학 퀴즈 (Lv.${currentMathLevel} ${levelName}) ✏️💯`;
+  } else if (type === "defense") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "최후의 방어선 🛡️☠️";
+  } else if (type === "dino") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "점프더 파이프 🍄🌀";
   } else {
     maxPredDiv.style.display = "block";
     labelDiv.style.display = "block";
@@ -98,8 +101,25 @@ function backToSelect() {
   stopBtn.disabled = true;
   gameStatus.style.display = "none";
 
-  document.querySelector("h1").textContent = "포즈 게임즈 🎮";
+  document.querySelector("h1").textContent = "eunwoo games 🎮";
   currentGameType = null;
+}
+
+/**
+ * 수학 퀴즈 난이도 선택 모달 제어
+ */
+function openMathModal() {
+  document.getElementById("math-modal").style.display = "flex";
+}
+
+function closeMathModal() {
+  document.getElementById("math-modal").style.display = "none";
+}
+
+function selectMathLevel(level) {
+  currentMathLevel = level;
+  closeMathModal();
+  selectGame('math');
 }
 
 /**
@@ -178,6 +198,32 @@ async function init() {
       gameEngine = new MathQuizEngine();
       gameStatus.style.display = "none";
       startMathMode();
+
+    } else if (currentGameType === "defense") {
+      // === 최후의 방어선 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
+
+      gameEngine = new DefenseGameEngine();
+      gameStatus.style.display = "none";
+      startGameMode({ timeLimit: 0 }); // 시간 제한 없음 (HP 기반)
+
+    } else if (currentGameType === "dino") {
+      // === 사막 공룡 달리기 ===
+      if (!isInitialized) {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
+        isInitialized = true;
+      }
+
+      gameEngine = new DinoRunEngine();
+      gameStatus.style.display = "none";
+      startGameMode({ timeLimit: 0 });
 
     } else {
       // === 과일 받아먹기 게임 ===
@@ -520,7 +566,7 @@ function startMarioMode() {
 
 // === 지루한 수학 퀴즈 전용 ===
 let mathRenderLoopId = null;
-let currentMathLevel = 1;
+
 
 // closeLevelModal, startMathGame 함수 제거됨 (직접 선택으로 변경)
 
