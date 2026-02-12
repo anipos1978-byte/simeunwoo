@@ -22,9 +22,9 @@ class GundamRunnerEngine {
         // 건담 상태 (1레인 - 화면 중앙)
         this.gundam = {
             x: 60,
-            y: 260, // 키가 커졌으므로 y 위치를 살짝 올려서 바닥에 맞춤 (기존 280)
-            width: 50,
-            height: 80, // 키 늘림 (기존 60)
+            y: 250, // 위치 조정
+            width: 70, // 더 듬직하게 너비 증가 (기존 50)
+            height: 90, // 키도 약간 더 늘림
             isAttacking: false,
             attackFrame: 0,
             attackDuration: 15
@@ -55,15 +55,15 @@ class GundamRunnerEngine {
         this._onKeyDown = this._handleKeyDown.bind(this);
 
         // 이미지 로드 (건담 & 자쿠)
-        this.gundamImg = new Image();
-        this.gundamImg.src = 'assets/images/gundam.png';
-        this.isGundamImgLoaded = false;
-        this.gundamImg.onload = () => {
-            this.processImageBackground(this.gundamImg, (img) => {
-                this.gundamImg = img;
-                this.isGundamImgLoaded = true;
-            });
-        };
+        this.gundamIdleImg = new Image();
+        this.gundamIdleImg.src = 'assets/images/gundam_idle.png';
+        this.isGundamIdleImgLoaded = false;
+        this.gundamIdleImg.onload = () => { this.isGundamIdleImgLoaded = true; };
+
+        this.gundamAttackImg = new Image();
+        this.gundamAttackImg.src = 'assets/images/gundam_attack.png';
+        this.isGundamAttackImgLoaded = false;
+        this.gundamAttackImg.onload = () => { this.isGundamAttackImgLoaded = true; };
 
         this.zakuImg = new Image();
         this.zakuImg.src = 'assets/images/zaku.png';
@@ -624,7 +624,7 @@ class GundamRunnerEngine {
         const gh = this.gundam.height;
 
         // 달리기 애니메이션 (위아래 바운스)
-        const runCycle = Math.sin(Date.now() * 0.012) * 2;
+        const runCycle = this.gundam.isAttacking ? 0 : Math.sin(Date.now() * 0.012) * 2;
         const bounceY = gy + runCycle;
 
         // 그림자
@@ -633,54 +633,37 @@ class GundamRunnerEngine {
         ctx.ellipse(gx + gw / 2, gy + gh - 3, 25, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        if (this.isGundamImgLoaded) {
-            // 이미지로 그리기
-            ctx.drawImage(this.gundamImg, gx - 10, bounceY - 10, gw + 20, gh + 15);
-        } else {
-            // 폴백 (기존 도트 건담)
-            // 건담 몸체 (흰색)
-            ctx.fillStyle = "#F5F5F5";
-            ctx.fillRect(gx + 12, gy - 22 + runCycle, gw - 24, gh - 12);
-            // ... (기존 그리기 코드 생략 - 너무 길어서 이미지 로드 실패 시 간단한 박스로 대체하거나, 기존 코드를 유지해도 됨)
-            // 편의상 여기서는 기존 정교한 그리기 코드를 전부 유지하기엔 너무 기므로, 
-            // 핵심 형태만 간단히 폴백으로 남깁니다.
-            ctx.fillStyle = "#1565C0"; // 몸통
-            ctx.fillRect(gx + 15, bounceY, gw - 30, gh - 20);
-        }
-
-        // === 빔사벨 (이미지 위에도 그려야 함) ===
         if (this.gundam.isAttacking) {
-            const progress = 1 - (this.gundam.attackFrame / this.gundam.attackDuration);
-            const saberAngle = -Math.PI / 3 + progress * Math.PI * 0.6;
-
-            ctx.save();
-            // 이미지 기준 손 위치 대략 추정
-            ctx.translate(gx + gw - 5, bounceY + 10);
-            ctx.rotate(saberAngle);
-
-            // 빔 그라디언트
-            const saberGrad = ctx.createLinearGradient(0, 0, 80, 0);
-            saberGrad.addColorStop(0, "rgba(255, 100, 200, 1)");
-            saberGrad.addColorStop(0.5, "rgba(255, 180, 255, 0.8)");
-            saberGrad.addColorStop(1, "rgba(255, 220, 255, 0)");
-            ctx.fillStyle = saberGrad;
-            ctx.fillRect(0, -5, 80, 10);
-
-            // 코어 빛
-            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-            ctx.fillRect(0, -2, 75, 4);
-
-            ctx.restore();
-
-            // 글로우
-            ctx.fillStyle = "rgba(255, 100, 200, 0.12)";
-            ctx.beginPath();
-            ctx.arc(gx + gw + 30, bounceY + 20, 50, 0, Math.PI * 2);
-            ctx.fill();
+            if (this.isGundamAttackImgLoaded && this.gundamAttackImg.complete) {
+                // 공격 모션: 가로세로 비율 유지하며 듬직하게 출력 (칼과 하체 보호)
+                const img = this.gundamAttackImg;
+                const aspect = img.width / img.height;
+                const drawH = gh * 1.8; // 공격 시에는 좀 더 웅장하게
+                const drawW = drawH * aspect;
+                // 바닥(gy + gh)에 발이 닿도록 정렬
+                ctx.drawImage(img, gx - 50, (gy + gh) - drawH, drawW, drawH);
+            } else {
+                ctx.fillStyle = "#FF69B4";
+                ctx.fillRect(gx, bounceY, gw, gh);
+            }
         } else {
-            // 대기 상태일 때 빔사벨 손잡이나 방패는 이미지에 포함되어 있다고 가정하거나
-            // 필요하면 추가로 그릴 수 있음. 일단은 생략.
+            if (this.isGundamIdleImgLoaded && this.gundamIdleImg.complete) {
+                // 평상시 모션: 고유 비율을 유지하여 "날씬함" 문제 해결
+                const img = this.gundamIdleImg;
+                const aspect = img.width / img.height;
+                const drawH = gh * 1.25; // 약간 더 크게
+                const drawW = drawH * aspect;
+                // 중앙 정렬 및 바닥 정렬
+                ctx.drawImage(img, gx - (drawW - gw) / 2, (gy + gh) - drawH + runCycle, drawW, drawH);
+            } else {
+                // 폴백 (이미지 로드 전)
+                ctx.fillStyle = "#1565C0";
+                ctx.fillRect(gx + 15, bounceY, gw - 30, gh - 20);
+            }
         }
+
+        // === 빔사벨 효과 (이미지에 포함되지 않은 추가 이펙트가 필요할 때만 사용) ===
+        // 현재는 새 이미지에 칼이 잘 살아있으므로 기존 수동 그리기 코드는 생략/최소화
     }
 
     drawZaku(ctx, e) {

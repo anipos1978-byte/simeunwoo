@@ -16,6 +16,12 @@ def main(input_path, output_path):
     try:
         input_image = Image.open(input_path)
         output_image = remove(input_image)
+        
+        # Crop to content (remove extra transparency)
+        bbox = output_image.getbbox()
+        if bbox:
+            output_image = output_image.crop(bbox)
+            
         output_image.save(output_path)
         print(f"Success! Saved to {output_path}")
     except Exception as e:
