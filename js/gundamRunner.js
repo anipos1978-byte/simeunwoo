@@ -16,13 +16,13 @@ class GundamRunnerEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
 
         // 건담 상태 (1레인 - 화면 중앙)
         this.gundam = {
             x: 60,
-            y: 250, // 위치 조정
+            y: 450, // 위치 조정
             width: 70, // 더 듬직하게 너비 증가 (기존 50)
             height: 90, // 키도 약간 더 늘림
             isAttacking: false,
@@ -81,6 +81,8 @@ class GundamRunnerEngine {
         this.isGameActive = true;
         this.score = 0;
         this.level = 1;
+        this.lives = 5;
+        this.maxLives = 5;
         this.combo = 0;
         this.maxCombo = 0;
         this.enemies = [];
@@ -241,10 +243,16 @@ class GundamRunnerEngine {
             e.x -= this.scrollSpeed * (e.speedMult || 1);
 
             if (e.x + e.width < -20) {
-                // 자쿠 놓침 → 점수 차감 & 콤보 리셋
-                this.score = Math.max(0, this.score - 200);
+                // 자쿠 놓침 → 생명 차감 & 콤보 리셋
+                this.lives--;
                 this.combo = 0;
                 this.enemies.splice(i, 1);
+
+                if (this.lives <= 0) {
+                    this.stop();
+                    return;
+                }
+
                 if (this.onScoreChange) {
                     this.onScoreChange(Math.floor(this.score), this.level);
                 }
@@ -259,9 +267,14 @@ class GundamRunnerEngine {
                 e.y + e.height > this.gundam.y - 20 &&
                 e.y < this.gundam.y + this.gundam.height
             ) {
-                this.score = Math.max(0, this.score - 150);
+                this.lives--;
                 this.combo = 0;
                 this.enemies.splice(i, 1);
+
+                if (this.lives <= 0) {
+                    this.stop();
+                    return;
+                }
 
                 this.effects.push({
                     x: this.gundam.x + this.gundam.width,
@@ -301,6 +314,12 @@ class GundamRunnerEngine {
                 } else if (item.type === "chicken") {
                     pts = 1000;
                     if (window.soundManager) window.soundManager.playChicken();
+                } else if (item.type === "heart") {
+                    if (this.lives < this.maxLives) {
+                        this.lives++;
+                        if (window.soundManager) window.soundManager.playCatch();
+                    }
+                    pts = 50; // 하트도 약간의 점수 제공
                 }
                 this.score += pts;
 
@@ -381,9 +400,12 @@ class GundamRunnerEngine {
         } else if (rand < 0.80) {
             type = "diamond";
             emoji = "💎";
-        } else {
+        } else if (rand < 0.90) {
             type = "chicken";
             emoji = "🍗";
+        } else {
+            type = "heart";
+            emoji = "❤️";
         }
 
         // 아이템은 공중에 떠있음 (건담 위에)
@@ -454,7 +476,12 @@ class GundamRunnerEngine {
         // === 아이템 그리기 ===
         for (const item of this.items) {
             // 글로우
-            const glowColors = { star: "rgba(255,215,0,0.3)", diamond: "rgba(0,191,255,0.3)", chicken: "rgba(255,99,71,0.3)" };
+            const glowColors = {
+                star: "rgba(255,215,0,0.3)",
+                diamond: "rgba(0,191,255,0.3)",
+                chicken: "rgba(255,99,71,0.3)",
+                heart: "rgba(255,100,100,0.4)"
+            };
             ctx.fillStyle = glowColors[item.type] || "rgba(255,255,255,0.3)";
             ctx.beginPath();
             ctx.arc(item.x + item.size / 2, item.y, item.size / 2 + 5, 0, Math.PI * 2);
@@ -539,14 +566,23 @@ class GundamRunnerEngine {
             ctx.fillStyle = "#FF69B4";
             ctx.font = "bold 18px Arial";
             ctx.textAlign = "center";
-            ctx.fillText(`${this.combo} 콤보!`, 200, 30);
+            ctx.fillText(`${this.combo} 콤보!`, 400, 30);
+        }
+
+        // 생명 (❤️ 아이콘)
+        ctx.textAlign = "left";
+        const heartY = 60;
+        for (let i = 0; i < 5; i++) {
+            ctx.fillStyle = i < this.lives ? "#FF0000" : "#555555";
+            ctx.font = "20px Arial";
+            ctx.fillText(i < this.lives ? "❤️" : "🖤", 15 + i * 25, heartY);
         }
 
         // 점수
         ctx.fillStyle = "#FFD700";
         ctx.font = "bold 22px Arial";
         ctx.textAlign = "right";
-        ctx.fillText(`점수: ${Math.floor(this.score)}`, 390, 30);
+        ctx.fillText(`점수: ${Math.floor(this.score)}`, 790, 30);
 
         ctx.restore();
 
@@ -555,7 +591,7 @@ class GundamRunnerEngine {
             ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
             ctx.font = "16px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("SPACE 빔사벨로 자쿠를 부수세요!", 200, 50);
+            ctx.fillText("SPACE 빔사벨로 자쿠를 부수세요!", 400, 50);
         }
     }
 

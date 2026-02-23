@@ -8,7 +8,7 @@ class DefenseGameEngine {
         this.lastTime = 0;
 
         // Game Entities
-        this.turret = { x: 50, y: 200, angle: 0, size: 40 };
+        this.turret = { x: 50, y: 300, angle: 0, size: 40 };
         this.aiTurrets = []; // { x, y, angle, lastFireTime, fireInterval }
         this.projectiles = [];
         this.enemies = [];
@@ -40,8 +40,8 @@ class DefenseGameEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
     }
 
     start() {
@@ -273,8 +273,8 @@ class DefenseGameEngine {
         this.scoreForNextLevel += 150;
 
         // Add a new AI turret
-        const spacing = 320 / Math.max(1, this.level - 1);
-        const y = 40 + (this.aiTurrets.length * spacing) % 320;
+        const spacing = 520 / Math.max(1, this.level - 1);
+        const y = 40 + (this.aiTurrets.length * spacing) % 520;
 
         this.aiTurrets.push({
             x: 50,
@@ -289,23 +289,52 @@ class DefenseGameEngine {
 
     updateAITurrets(deltaTime) {
         const now = Date.now();
+        const projectileSpeed = 400;
+
         for (const ai of this.aiTurrets) {
-            // Find nearest enemy
-            let nearestEnemy = null;
+            // Find target (Nearest and most threatening)
+            let target = null;
             let minDist = Infinity;
 
             for (const e of this.enemies) {
+                // Heuristic: Prefer enemies closer to the base (lower x)
                 const d = Math.hypot(e.x - ai.x, e.y - ai.y);
-                if (d < minDist) {
-                    minDist = d;
-                    nearestEnemy = e;
+                const score = d + (e.x * 0.5); // Weight distance and closeness to base
+
+                if (score < minDist) {
+                    minDist = score;
+                    target = e;
                 }
             }
 
-            if (nearestEnemy) {
-                const dx = nearestEnemy.x - ai.x;
-                const dy = nearestEnemy.y - ai.y;
-                ai.angle = Math.atan2(dy, dx);
+            if (target) {
+                const dx = target.x - ai.x;
+                const dy = target.y - ai.y;
+                const ve = target.speed; // Enemy moves in -x direction
+
+                // Predictive Aiming (Lead Shooting)
+                // Solve: (dx - ve*T)^2 + dy^2 = (vp*T)^2
+                // (vp^2 - ve^2)T^2 + 2*dx*ve*T - (dx^2 + dy^2) = 0
+                const A = projectileSpeed * projectileSpeed - ve * ve;
+                const B = 2 * dx * ve;
+                const C = -(dx * dx + dy * dy);
+
+                const discriminant = B * B - 4 * A * C;
+                if (discriminant >= 0) {
+                    const t1 = (-B + Math.sqrt(discriminant)) / (2 * A);
+                    const t2 = (-B - Math.sqrt(discriminant)) / (2 * A);
+                    const t = t1 > 0 ? t1 : t2;
+
+                    if (t > 0) {
+                        const predictedX = target.x - ve * t;
+                        const predictedY = target.y;
+                        ai.angle = Math.atan2(predictedY - ai.y, predictedX - ai.x);
+                    } else {
+                        ai.angle = Math.atan2(dy, dx);
+                    }
+                } else {
+                    ai.angle = Math.atan2(dy, dx);
+                }
 
                 if (now - ai.lastFireTime > ai.fireInterval) {
                     this.shoot(ai);
@@ -422,10 +451,10 @@ class DefenseGameEngine {
 
         ctx.textAlign = "right";
         ctx.fillStyle = this.baseHP > 30 ? "green" : "red";
-        ctx.fillText(`HP: ${this.baseHP}`, 390, 30);
+        ctx.fillText(`HP: ${this.baseHP}`, 790, 30);
 
         ctx.fillStyle = "orange";
-        ctx.fillText(`🚀: ${this.missileCount}`, 390, 55);
+        ctx.fillText(`🚀: ${this.missileCount}`, 790, 55);
         ctx.restore();
     }
 

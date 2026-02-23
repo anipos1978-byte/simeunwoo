@@ -15,8 +15,8 @@ class MarioEscapeEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
 
         // 마리오 상태
         this.mario = {
@@ -458,8 +458,8 @@ class MarioEscapeEngine {
         ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'left';
         ctx.fillText(`Lv. ${this.level}`, 15, 30);
-        ctx.textAlign = 'right';
-        ctx.fillText(`Score: ${Math.floor(this.score)}`, 385, 30);
+        ctx.textAlign = "right";
+        ctx.fillText(`Score: ${Math.floor(this.score)}`, 785, 30);
 
         if (this.mario.hasGun) {
             ctx.fillStyle = '#FFD700';

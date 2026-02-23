@@ -17,7 +17,7 @@ class GameEngine {
     this.onGameEnd = null;
 
     // 게임 상태
-    this.basket = { x: 180, y: 360, width: 80, height: 30 };
+    this.basket = { x: 360, y: 540, width: 80, height: 30 };
     this.items = [];
     this.skeweredItems = []; // 창에 꽂힌 아이템들
     this.explosion = null; // 폭발 이펙트 상태
@@ -29,8 +29,8 @@ class GameEngine {
     this.spawnInterval = 1500; // 초기 생성 간격 느리게 (1.5초)
     this.itemSpeed = 1.5; // 초기 속도 느리게
 
-    this.canvasWidth = 400;
-    this.canvasHeight = 400;
+    this.canvasWidth = 800;
+    this.canvasHeight = 600;
 
     // 이미지 로드
     this.spearImage = new Image();
@@ -210,7 +210,7 @@ class GameEngine {
   }
 
   spawnItem() {
-    const lanes = [46, 180, 313];
+    const lanes = [92, 360, 626];
     const laneX = lanes[Math.floor(Math.random() * lanes.length)];
 
     let type;
@@ -348,11 +348,11 @@ class GameEngine {
 
     // 한글 라벨 매핑 및 위치 이동 (스냅 방식)
     if (detectedPose === "왼쪽" || detectedPose === "Left") {
-      this.basket.x = 26;
+      this.basket.x = 52;
     } else if (detectedPose === "오른쪽" || detectedPose === "Right") {
-      this.basket.x = 293;
+      this.basket.x = 586;
     } else if (detectedPose === "정면" || detectedPose === "Center") {
-      this.basket.x = 160;
+      this.basket.x = 320;
     }
   }
 
@@ -481,13 +481,13 @@ class GameEngine {
     ctx.lineWidth = 2;
 
     ctx.beginPath();
-    ctx.moveTo(133, 0);
-    ctx.lineTo(133, 400);
+    ctx.moveTo(266, 0);
+    ctx.lineTo(266, 600);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(266, 0);
-    ctx.lineTo(266, 400);
+    ctx.moveTo(532, 0);
+    ctx.lineTo(532, 600);
     ctx.stroke();
 
     // 무적 상태 이펙트 (실드)
@@ -594,13 +594,13 @@ class GameEngine {
     ctx.fillStyle = "cyan";
     ctx.font = "bold 20px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(`Lv. ${this.level}`, 200, 35);
+    ctx.fillText(`Lv. ${this.level}`, 400, 35);
 
     // Score (Right Top)
     ctx.fillStyle = "#FFD700"; // Gold
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "right";
-    ctx.fillText(`SCORE: ${this.score}`, 385, 35);
+    ctx.fillText(`SCORE: ${this.score}`, 785, 35);
     ctx.restore();
   }
 

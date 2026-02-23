@@ -13,8 +13,8 @@ class MathQuizEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
     }
 
     start(level = 1) {
@@ -290,7 +290,7 @@ class MathQuizEngine {
         ctx.fillText(`SCORE: ${this.score}`, 30, 40);
 
         ctx.textAlign = "right";
-        ctx.fillText(`TIME: ${Math.ceil(this.timeLeft)}`, 370, 40);
+        ctx.fillText(`TIME: ${Math.ceil(this.timeLeft)}`, 770, 40);
 
         // 레벨 표시
         ctx.textAlign = "center";

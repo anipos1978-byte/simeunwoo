@@ -10,7 +10,7 @@ let stabilizer;
 let ctx;
 let labelContainer;
 let isInitialized = false;
-let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math", "defense", "dino"
+let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math", "defense", "dino", "cat3d"
 let currentMathLevel = 1;
 
 /**
@@ -58,6 +58,10 @@ function selectGame(type) {
     maxPredDiv.style.display = "none";
     labelDiv.style.display = "none";
     document.querySelector("h1").textContent = "점프더 파이프 🍄🌀";
+  } else if (type === "cat3d") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "우당탕탕 고양이 3D 🐈🏠";
   } else {
     maxPredDiv.style.display = "block";
     labelDiv.style.display = "block";
@@ -128,17 +132,24 @@ function selectMathLevel(level) {
 async function init() {
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
-  const canvas = document.getElementById("canvas");
+  const oldCanvas = document.getElementById("canvas");
   const gameStatus = document.getElementById("game-status");
 
   startBtn.disabled = true;
+
+  // === 캔버스 재성성 (컨텍스트 충돌 방지) ===
+  const newCanvas = oldCanvas.cloneNode(true);
+  oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+  // 로컬 및 전역 참조 업데이트
+  const canvas = newCanvas;
 
   try {
     if (currentGameType === "bird") {
       // === 버드스트라이크 게임 ===
       if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
+        canvas.width = 800;
+        canvas.height = 600;
         ctx = canvas.getContext("2d");
         isInitialized = true;
       }
@@ -149,12 +160,9 @@ async function init() {
 
     } else if (currentGameType === "gundam") {
       // === 건담 러너 게임 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new GundamRunnerEngine();
       gameStatus.style.display = "none";
@@ -162,12 +170,9 @@ async function init() {
 
     } else if (currentGameType === "kirby") {
       // === 커비 플라잉 러너 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new KirbyRunnerEngine();
       gameStatus.style.display = "none";
@@ -175,12 +180,9 @@ async function init() {
 
     } else if (currentGameType === "mario") {
       // === 마리오 탈출 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new MarioEscapeEngine();
       gameStatus.style.display = "none";
@@ -188,12 +190,9 @@ async function init() {
 
     } else if (currentGameType && currentGameType.startsWith("math")) {
       // === 지루한 수학 퀴즈 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new MathQuizEngine();
       gameStatus.style.display = "none";
@@ -201,32 +200,32 @@ async function init() {
 
     } else if (currentGameType === "defense") {
       // === 최후의 방어선 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new DefenseGameEngine();
       gameStatus.style.display = "none";
       startGameMode({ timeLimit: 0 }); // 시간 제한 없음 (HP 기반)
 
     } else if (currentGameType === "dino") {
-      // === 사막 공룡 달리기 ===
-      if (!isInitialized) {
-        canvas.width = 400;
-        canvas.height = 400;
-        ctx = canvas.getContext("2d");
-        isInitialized = true;
-      }
+      // === 점프더 파이프 (공룡) ===
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
 
       gameEngine = new DinoRunEngine();
       gameStatus.style.display = "none";
       startGameMode({ timeLimit: 0 });
 
-    } else {
-      // === 과일 받아먹기 게임 ===
+    } else if (currentGameType === "cat3d") {
+      // === 우당탕탕 고양이 3D ===
+      gameEngine = new CatGame3DEngine();
+      gameStatus.style.display = "none";
+      startCat3DMode();
+
+    } else if (currentGameType === "fruit") {
+      // === 과일 받아먹기 (포즈 인식) ===
       if (!isInitialized) {
         poseEngine = new PoseEngine("./my_model/");
         const { maxPredictions, webcam } = await poseEngine.init({
@@ -257,6 +256,10 @@ async function init() {
         poseEngine.start();
 
         isInitialized = true;
+      } else {
+        canvas.width = 400;
+        canvas.height = 400;
+        ctx = canvas.getContext("2d");
       }
 
       gameStatus.style.display = "none";
@@ -304,6 +307,10 @@ function stop() {
     cancelAnimationFrame(mathRenderLoopId);
     mathRenderLoopId = null;
   }
+  if (cat3DRenderLoopId) {
+    cancelAnimationFrame(cat3DRenderLoopId);
+    cat3DRenderLoopId = null;
+  }
 
   // 수학 퀴즈 컨트롤 숨기기
   const mathControls = document.getElementById("math-controls");
@@ -346,12 +353,12 @@ function handlePrediction(predictions, pose) {
  */
 function drawPose(pose) {
   if (poseEngine.webcam && poseEngine.webcam.canvas) {
-    ctx.drawImage(poseEngine.webcam.canvas, 0, 0, 400, 400);
+    ctx.drawImage(poseEngine.webcam.canvas, 0, 0, 800, 600);
 
     if (pose) {
       const minPartConfidence = 0.5;
       ctx.save();
-      ctx.scale(2, 2);
+      ctx.scale(4, 3); // 200x200 webcam -> 800x600 canvas
       tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
       tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
       ctx.restore();
@@ -627,4 +634,49 @@ function passMathProblem() {
   if (gameEngine && gameEngine instanceof MathQuizEngine) {
     gameEngine.passProblem();
   }
+}
+
+// === 우당탕탕 고양이 3D 전용 ===
+let cat3DRenderLoopId = null;
+
+function startCat3DMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score) => {
+    // UI 업데이트 로직 (소음 게이지 등)
+  });
+
+  gameEngine.setGameEndCallback((finalScore) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (cat3DRenderLoopId) {
+      cancelAnimationFrame(cat3DRenderLoopId);
+      cat3DRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${finalScore}<br>
+      <span style="font-size: 16px;">할머니에게 들켰습니다!</span><br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  function renderLoop(timestamp) {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+
+    gameEngine.update(timestamp);
+    gameEngine.draw(); // Three.js는 자체 renderer를 사용함
+
+    cat3DRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  cat3DRenderLoopId = requestAnimationFrame(renderLoop);
 }

@@ -8,7 +8,7 @@ class DinoRunEngine {
         // Player (Mario)
         this.dino = {
             x: 50,
-            y: 350,
+            y: 550,
             width: 40,
             height: 40,
             vy: 0,
@@ -16,7 +16,7 @@ class DinoRunEngine {
             gravity: 0.6,
             isJumping: false,
             isCrouching: false,
-            groundY: 350,
+            groundY: 550,
             rotation: 0,
             scale: 1
         };
@@ -47,8 +47,8 @@ class DinoRunEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
 
         // High Score
         this.highScore = localStorage.getItem("dinoHighScore") || 0;
@@ -79,7 +79,10 @@ class DinoRunEngine {
         window.addEventListener("keydown", this.handleKeyDown);
         window.addEventListener("keyup", this.handleKeyUp);
         const canvas = document.getElementById("canvas");
-        if (canvas) canvas.addEventListener("mousedown", this.handleMouseDown);
+        if (canvas) {
+            canvas.addEventListener("mousedown", this.handleMouseDown);
+            this.ctx = canvas.getContext("2d");
+        }
 
         this.startGameLoop();
     }
@@ -113,7 +116,7 @@ class DinoRunEngine {
             this.lastTime = now;
 
             this.update(deltaTime);
-            this.draw(ctx);
+            this.draw();
             this.gameLoopId = requestAnimationFrame(loop);
         };
         this.gameLoopId = requestAnimationFrame(loop);
@@ -277,7 +280,7 @@ class DinoRunEngine {
         if (type === "pipe") {
             this.obstacles.push({
                 x: this.canvasWidth,
-                y: 340, // Height of ground - pipe height
+                y: 540, // Height of ground - pipe height
                 width: 40,
                 height: 50,
                 type: "pipe",
@@ -285,7 +288,7 @@ class DinoRunEngine {
             });
         } else {
             // Bullet height specifically for crouching (hits head while walking, clears while crouching)
-            const bulletY = 315 + Math.random() * 10;
+            const bulletY = 515 + Math.random() * 10;
             this.obstacles.push({
                 x: this.canvasWidth,
                 y: bulletY,
@@ -306,8 +309,9 @@ class DinoRunEngine {
         });
     }
 
-    draw(ctx) {
-        if (!this.isGameActive) return;
+    draw() {
+        if (!this.isGameActive || !this.ctx) return;
+        const ctx = this.ctx;
 
         // Sky and Desert Ground
         ctx.fillStyle = "#f7f7f7";
@@ -317,8 +321,8 @@ class DinoRunEngine {
         ctx.strokeStyle = "#535353";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(0, 390);
-        ctx.lineTo(this.canvasWidth, 390);
+        ctx.moveTo(0, 590);
+        ctx.lineTo(this.canvasWidth, 590);
         ctx.stroke();
 
         // Draw Clouds
@@ -371,7 +375,7 @@ class DinoRunEngine {
         ctx.textAlign = "right";
         const scoreStr = this.score.toString().padStart(5, '0');
         const hiStr = Math.max(this.score, this.highScore).toString().padStart(5, '0');
-        ctx.fillText(`HI ${hiStr} ${scoreStr}`, 390, 30);
+        ctx.fillText(`HI ${hiStr} ${scoreStr}`, 790, 30);
     }
 
     setScoreChangeCallback(callback) { this.onScoreChange = callback; }

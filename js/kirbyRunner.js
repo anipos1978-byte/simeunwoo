@@ -16,11 +16,11 @@ class KirbyRunnerEngine {
         this.onScoreChange = null;
         this.onGameEnd = null;
 
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
 
         // 바닥 Y좌표
-        this.groundY = 320;
+        this.groundY = 520;
 
         // 커비 상태
         this.kirby = {
@@ -522,7 +522,7 @@ class KirbyRunnerEngine {
         ctx.fillStyle = "#FFD700";
         ctx.font = "bold 22px Arial";
         ctx.textAlign = "right";
-        ctx.fillText(`점수: ${Math.floor(this.score)}`, 390, 30);
+        ctx.fillText(`점수: ${Math.floor(this.score)}`, 790, 30);
 
         ctx.restore();
 
@@ -531,7 +531,7 @@ class KirbyRunnerEngine {
             ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
             ctx.font = "16px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("SPACE 꾹 누르면 커비가 날아요!", 200, 50);
+            ctx.fillText("SPACE 꾹 누르면 커비가 날아요!", 400, 50);
         }
     }
 

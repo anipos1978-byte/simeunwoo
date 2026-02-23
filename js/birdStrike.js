@@ -17,18 +17,18 @@ class BirdStrikeEngine {
         this.onGameEnd = null;
 
         // 캔버스 크기
-        this.canvasWidth = 400;
-        this.canvasHeight = 400;
+        this.canvasWidth = 800;
+        this.canvasHeight = 600;
 
         // 3레인 시스템 (과일 받아먹기와 동일)
-        this.lanes = [66, 200, 333]; // 왼쪽, 중앙, 오른쪽 레인 중심 X
+        this.lanes = [132, 400, 668]; // 왼쪽, 중앙, 오른쪽 레인 중심 X
         this.currentLane = 1; // 시작 = 중앙 (인덱스 1)
 
         // 비행기 상태
         this.plane = {
-            x: 200,
-            y: 330,
-            targetX: 200,
+            x: 400,
+            y: 530,
+            targetX: 400,
             width: 40,
             height: 40
         };
@@ -77,6 +77,8 @@ class BirdStrikeEngine {
         this.isGameActive = true;
         this.score = 0;
         this.level = 1;
+        this.lives = 5;
+        this.maxLives = 5;
         this.obstacles = [];
         this.clouds = [];
         this.particles = [];
@@ -277,12 +279,18 @@ class BirdStrikeEngine {
             emoji = "💎";
             size = 25;
             speedMult = 1.2;
-        } else {
-            // 치킨 (10%) - 고득점!
+        } else if (rand < 0.95) {
+            // 치킨 (5%)
             type = "chicken";
             emoji = "🍗";
             size = 30;
             speedMult = 0.9;
+        } else {
+            // 하트 (5%) - 생명 회복!
+            type = "heart";
+            emoji = "❤️";
+            size = 30;
+            speedMult = 0.8;
         }
 
         // 3레인 중 하나에 스폰
@@ -318,9 +326,26 @@ class BirdStrikeEngine {
 
     handleCollision(obs) {
         if (obs.type === "bird" || obs.type === "bigbird") {
-            // 새 충돌 - 점수 차감 (무한 모드이므로 라이프 대신)
-            this.score = Math.max(0, this.score - 200);
+            // 새 충돌 - 생명 차감
+            this.lives--;
             this.invincibleUntil = Date.now() + 1500; // 1.5초 무적
+
+            if (this.lives <= 0) {
+                // 비행기 폭파 (파티클 대량 생성)
+                if (window.soundManager) window.soundManager.playExplosion();
+                for (let i = 0; i < 20; i++) {
+                    this.particles.push({
+                        x: this.plane.x + this.plane.width / 2,
+                        y: this.plane.y + this.plane.height / 2,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 50,
+                        color: "#FF4400"
+                    });
+                }
+                this.stop();
+                return;
+            }
 
             // 폭발 이펙트
             this.explosions.push({
@@ -357,6 +382,16 @@ class BirdStrikeEngine {
             this.score += 1000;
             if (window.soundManager) window.soundManager.playChicken();
             this.spawnScoreParticles(obs.x, obs.y, "+1000!", "#FF6347");
+        } else if (obs.type === "heart") {
+            if (this.lives < this.maxLives) {
+                this.lives++;
+                if (window.soundManager) window.soundManager.playCatch();
+                this.spawnScoreParticles(obs.x, obs.y, "LIFE UP!", "#FF1493");
+            } else {
+                this.score += 500; // 풀피일 땐 보너스 점수
+                if (window.soundManager) window.soundManager.playBonus();
+                this.spawnScoreParticles(obs.x, obs.y, "+500", "#FFC0CB");
+            }
         }
 
         if (this.onScoreChange) {
@@ -412,13 +447,13 @@ class BirdStrikeEngine {
         ctx.setLineDash([10, 10]);
         // 레인 1 | 레인 2 경계
         ctx.beginPath();
-        ctx.moveTo(133, 0);
-        ctx.lineTo(133, this.canvasHeight);
+        ctx.moveTo(266, 0);
+        ctx.lineTo(266, this.canvasHeight);
         ctx.stroke();
         // 레인 2 | 레인 3 경계
         ctx.beginPath();
-        ctx.moveTo(266, 0);
-        ctx.lineTo(266, this.canvasHeight);
+        ctx.moveTo(532, 0);
+        ctx.lineTo(532, this.canvasHeight);
         ctx.stroke();
         ctx.setLineDash([]);
 
@@ -445,7 +480,8 @@ class BirdStrikeEngine {
                 const glowColors = {
                     star: "rgba(255, 215, 0, 0.4)",
                     diamond: "rgba(0, 191, 255, 0.4)",
-                    chicken: "rgba(255, 99, 71, 0.4)"
+                    chicken: "rgba(255, 99, 71, 0.4)",
+                    heart: "rgba(255, 20, 147, 0.5)"
                 };
                 ctx.fillStyle = glowColors[obs.type] || "rgba(255,255,255,0.3)";
                 ctx.beginPath();
@@ -603,11 +639,19 @@ class BirdStrikeEngine {
         ctx.textAlign = "left";
         ctx.fillText(`Lv. ${this.level}`, 15, 30);
 
+        // 생명 (❤️ 아이콘)
+        const heartY = 60;
+        for (let i = 0; i < 5; i++) {
+            ctx.fillStyle = i < this.lives ? "#FF0000" : "#555555";
+            ctx.font = "20px Arial";
+            ctx.fillText(i < this.lives ? "❤️" : "🖤", 15 + i * 25, heartY);
+        }
+
         // 점수 (오른쪽 상단)
         ctx.fillStyle = "#FFD700";
         ctx.font = "bold 22px Arial";
         ctx.textAlign = "right";
-        ctx.fillText(`점수: ${Math.floor(this.score)}`, 390, 30);
+        ctx.fillText(`점수: ${Math.floor(this.score)}`, 790, 30);
 
         ctx.restore();
 
@@ -616,7 +660,7 @@ class BirdStrikeEngine {
             ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
             ctx.font = "16px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("← → 방향키로 레인을 이동하세요!", 200, 380);
+            ctx.fillText("← → 방향키로 레인을 이동하세요!", 400, 580);
         }
     }
 
