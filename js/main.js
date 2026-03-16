@@ -10,7 +10,7 @@ let stabilizer;
 let ctx;
 let labelContainer;
 let isInitialized = false;
-let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math", "defense", "dino", "cat3d"
+let currentGameType = null; // "fruit", "bird", "gundam", "kirby", "mario", "math", "defense", "dino", "cat3d", "parrot"
 let currentMathLevel = 1;
 
 /**
@@ -62,6 +62,10 @@ function selectGame(type) {
     maxPredDiv.style.display = "none";
     labelDiv.style.display = "none";
     document.querySelector("h1").textContent = "우당탕탕 고양이 3D 🐈🏠";
+  } else if (type === "parrot") {
+    maxPredDiv.style.display = "none";
+    labelDiv.style.display = "none";
+    document.querySelector("h1").textContent = "앵무새의 비밀 미션 🦜🥣";
   } else {
     maxPredDiv.style.display = "block";
     labelDiv.style.display = "block";
@@ -224,6 +228,16 @@ async function init() {
       gameStatus.style.display = "none";
       startCat3DMode();
 
+    } else if (currentGameType === "parrot") {
+      // === 앵무새의 비밀 미션 ===
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx = canvas.getContext("2d");
+
+      gameEngine = new ParrotStealEngine();
+      gameStatus.style.display = "none";
+      startParrotMode();
+
     } else if (currentGameType === "fruit") {
       // === 과일 받아먹기 (포즈 인식) ===
       if (!isInitialized) {
@@ -310,6 +324,10 @@ function stop() {
   if (cat3DRenderLoopId) {
     cancelAnimationFrame(cat3DRenderLoopId);
     cat3DRenderLoopId = null;
+  }
+  if (parrotRenderLoopId) {
+    cancelAnimationFrame(parrotRenderLoopId);
+    parrotRenderLoopId = null;
   }
 
   // 수학 퀴즈 컨트롤 숨기기
@@ -679,4 +697,50 @@ function startCat3DMode() {
     cat3DRenderLoopId = requestAnimationFrame(renderLoop);
   }
   cat3DRenderLoopId = requestAnimationFrame(renderLoop);
+}
+
+// === 앵무새의 비밀 미션 전용 ===
+let parrotRenderLoopId = null;
+
+function startParrotMode() {
+  if (!gameEngine) return;
+
+  gameEngine.setScoreChangeCallback((score, level) => {
+    // 캔버스에 직접 그림
+  });
+
+  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+    const gameStatus = document.getElementById("game-status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    if (parrotRenderLoopId) {
+      cancelAnimationFrame(parrotRenderLoopId);
+      parrotRenderLoopId = null;
+    }
+
+    gameStatus.innerHTML = `
+      게임 오버<br>
+      점수: ${finalScore}<br>
+      레벨: ${finalLevel}<br>
+      <span style="font-size: 16px;">주인에게 들켰습니다! 🦜💥</span><br>
+      <span style="font-size: 16px;">시작을 눌러 재도전!</span>
+    `;
+    gameStatus.style.display = "block";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  gameEngine.start();
+
+  function renderLoop(timestamp) {
+    if (!gameEngine || !gameEngine.isGameActive) return;
+
+    gameEngine.update(timestamp);
+    gameEngine.draw(ctx);
+
+    parrotRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+  parrotRenderLoopId = requestAnimationFrame(renderLoop);
 }

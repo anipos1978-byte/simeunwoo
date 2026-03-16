@@ -14,10 +14,14 @@ class FeedbackChat {
         this.render();
         this.updateUserInfoUI();
 
+        // 프로필이 없어도 위젯은 보이게 함 (가이드북 접근을 위해)
+        const userInfo = document.getElementById('user-info-widget');
+        if (userInfo) userInfo.style.display = 'flex';
+
         // 프로필이 없으면 셋업 모달 표시 준비
         if (!this.userProfile) {
-            // DOM이 완전히 로드된 후 체크
-            setTimeout(() => this.checkProfile(), 500);
+            // DOM이 로드된 후 즉시 체크
+            this.checkProfile();
         }
     }
 
@@ -82,19 +86,33 @@ class FeedbackChat {
 
     updateUserInfoUI() {
         const userInfo = document.getElementById('user-info-widget');
-        if (userInfo && this.userProfile) {
+        if (userInfo) {
             userInfo.style.display = 'flex';
-            userInfo.innerHTML = `
-                <div class="user-avatar">${this.getAvatarHTML(this.userProfile.avatar)}</div>
-                <div class="user-details">
-                    <div class="user-nick">${this.userProfile.nickname}${this.userProfile.isGuest ? ' (Guest)' : ''}</div>
-                    <div class="user-label">나의 프로필</div>
-                </div>
-                <div class="user-actions">
-                    <button class="guide-btn" onclick="window.feedbackChat.showHandbook()">가이드북</button>
-                    <button class="logout-btn" onclick="window.feedbackChat.logout()">로그아웃</button>
-                </div>
-            `;
+            if (this.userProfile) {
+                userInfo.innerHTML = `
+                    <div class="user-avatar">${this.getAvatarHTML(this.userProfile.avatar)}</div>
+                    <div class="user-details">
+                        <div class="user-nick">${this.userProfile.nickname}${this.userProfile.isGuest ? ' (Guest)' : ''}</div>
+                        <div class="user-label">나의 프로필</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="guide-btn" onclick="window.feedbackChat.showHandbook()">가이드북</button>
+                        <button class="logout-btn" onclick="window.feedbackChat.logout()">로그아웃</button>
+                    </div>
+                `;
+            } else {
+                // 프로필 없을 때의 위젯 모양
+                userInfo.innerHTML = `
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details" onclick="window.feedbackChat.showProfileSetup()" style="cursor:pointer;">
+                        <div class="user-nick">로그인/설정</div>
+                        <div class="user-label">프로필을 만들어보세요</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="guide-btn" onclick="window.feedbackChat.showHandbook()">가이드북</button>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -240,13 +258,20 @@ class FeedbackChat {
         const warning = document.getElementById('profanity-warning');
         if (warning) {
             warning.style.display = 'flex';
-            // 3초 후 강제 새로고침
+            // 3초 후 창 닫기 시도 (브라우저 정책에 따라 차단될 수 있음)
             setTimeout(() => {
-                location.reload();
+                window.close();
+                // window.close()가 작동하지 않을 경우를 대비한 fallback (빈 페이지로 이동)
+                setTimeout(() => {
+                    location.href = "about:blank";
+                }, 500);
             }, 3000);
         } else {
-            alert('나쁜 말을 사용하셨습니다! 시스템에 의해 퇴장 조치됩니다.');
-            location.reload();
+            alert('나쁜 말을 사용하셨습니다! 시스템에 의해 창이 닫힙니다.');
+            window.close();
+            setTimeout(() => {
+                location.href = "about:blank";
+            }, 500);
         }
     }
 
